@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { LOGO_B64 } from '../lib/logo'
 import PageEvents from './PageEvents'
+import PageUsers from './PageUsers'
 
 // --- ICONES SVG ---
 const Icons = {
@@ -236,6 +237,7 @@ export default function AppLayout({ session, onLogout }) {
       return <DashboardVolunteer profile={profile} />
     }
     if (page === 'events') return <PageEvents profile={profile} onSetActiveEvent={(id, name) => { setActiveEventId(id); setActiveEventName(name) }} />
+    if (page === 'users') return <PageUsers profile={profile} activeEventId={activeEventId} />
     const titles = {
       events: 'Evenements',
       users: 'Utilisateurs',
