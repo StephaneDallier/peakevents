@@ -1,9 +1,10 @@
 'use client'
- 
+
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { LOGO_B64 } from '../lib/logo'
- 
+import AppLayout from './AppLayout'
+
 export default function Home() {
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -11,7 +12,7 @@ export default function Home() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [view, setView] = useState('landing')
- 
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
@@ -25,24 +26,24 @@ export default function Home() {
     })
     return () => subscription.unsubscribe()
   }, [])
- 
+
   async function handleLogin(e) {
     e.preventDefault()
     setError('')
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) setError('Email ou mot de passe incorrect')
   }
- 
+
   async function handleLogout() {
     await supabase.auth.signOut()
   }
- 
+
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif' }}>
       <div style={{ color: '#1C3829', fontSize: 16 }}>Chargement...</div>
     </div>
   )
- 
+
   if (view === 'landing') return (
     <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: 'Inter, sans-serif' }}>
       {/* Nav */}
@@ -55,7 +56,7 @@ export default function Home() {
           Acceder a la plateforme &rarr;
         </button>
       </nav>
- 
+
       {/* Hero avec image */}
       <div style={{ position: 'relative', height: 520, overflow: 'hidden' }}>
         <img
@@ -80,7 +81,7 @@ export default function Home() {
           </button>
         </div>
       </div>
- 
+
       {/* Features */}
       <div style={{ padding: '72px 60px', maxWidth: 1200, margin: '0 auto' }}>
         <h2 style={{ textAlign: 'center', fontSize: 34, fontWeight: 800, marginBottom: 8, color: '#111' }}>Tout ce dont vous avez besoin</h2>
@@ -122,7 +123,7 @@ export default function Home() {
       </div>
     </div>
   )
- 
+
   if (view === 'login') return (
     <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif' }}>
       <div style={{ background: '#fff', borderRadius: 16, padding: 36, width: '100%', maxWidth: 400, border: '1px solid #e5e7eb', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
@@ -157,17 +158,6 @@ export default function Home() {
       </div>
     </div>
   )
- 
-  if (view === 'app') return (
-    <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif' }}>
-      <div style={{ textAlign: 'center' }}>
-        <img src={`data:image/png;base64,${LOGO_B64}`} alt="PeakEvents" style={{ height: 56, marginBottom: 16 }} />
-        <p style={{ color: '#6b7280', marginBottom: 20 }}>Connecte en tant que {session?.user?.email}</p>
-        <button onClick={handleLogout}
-          style={{ background: '#f3f4f6', color: '#374151', border: '1px solid #e5e7eb', borderRadius: 8, padding: '9px 20px', fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
-          Se deconnecter
-        </button>
-      </div>
-    </div>
-  )
+
+  if (view === 'app') return <AppLayout session={session} onLogout={handleLogout} />
 }
