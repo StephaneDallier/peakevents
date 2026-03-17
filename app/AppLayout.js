@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { LOGO_B64 } from '../lib/logo'
+import PageEvents from './PageEvents'
 
 // --- ICONES SVG ---
 const Icons = {
@@ -18,7 +19,7 @@ const Icons = {
 }
 
 // --- SIDEBAR ---
-function Sidebar({ page, setPage, profile, onLogout }) {
+function Sidebar({ page, setPage, profile, onLogout, activeEventName }) {
   const role = profile?.role || 'volunteer'
 
   const navAdmin = [
@@ -53,7 +54,7 @@ function Sidebar({ page, setPage, profile, onLogout }) {
       {/* Evenement actif */}
       <div style={{ margin: '0 12px 16px', background: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: '10px 12px' }}>
         <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Evenement actif</div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>SwimRun du Verdon</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>{activeEventName || 'Aucun evenement'}</div>
         <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>14 juin 2027</div>
       </div>
 
@@ -216,6 +217,8 @@ function PagePlaceholder({ title }) {
 export default function AppLayout({ session, onLogout }) {
   const [profile, setProfile] = useState(null)
   const [page, setPage] = useState('dashboard')
+  const [activeEventId, setActiveEventId] = useState(null)
+  const [activeEventName, setActiveEventName] = useState('SwimRun du Verdon')
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -232,6 +235,7 @@ export default function AppLayout({ session, onLogout }) {
       if (role === 'organizer') return <DashboardOrganizer profile={profile} />
       return <DashboardVolunteer profile={profile} />
     }
+    if (page === 'events') return <PageEvents profile={profile} onSetActiveEvent={(id, name) => { setActiveEventId(id); setActiveEventName(name) }} />
     const titles = {
       events: 'Evenements',
       users: 'Utilisateurs',
@@ -246,7 +250,7 @@ export default function AppLayout({ session, onLogout }) {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#f9fafb', fontFamily: 'Inter, sans-serif' }}>
-      <Sidebar page={page} setPage={setPage} profile={profile} onLogout={onLogout} />
+      <Sidebar page={page} setPage={setPage} profile={profile} onLogout={onLogout} activeEventName={activeEventName} />
       <main style={{ flex: 1, padding: '32px 40px', overflowY: 'auto' }}>
         {renderPage()}
       </main>
