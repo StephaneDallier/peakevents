@@ -43,15 +43,15 @@ function getSkills(p) {
 
 function StatusBadge({ status }) {
   const map = {
-    accepted: { bg: '#dcfce7', color: '#16a34a', label: 'Accepte' },
+    acceptéd: { bg: '#dcfce7', color: '#16a34a', label: 'Accepté' },
     pending: { bg: '#fef9c3', color: '#ca8a04', label: 'En attente' },
-    refused: { bg: '#fef2f2', color: '#dc2626', label: 'Refuse' },
+    refuséd: { bg: '#fef2f2', color: '#dc2626', label: 'Refusé' },
   }
-  const s = map[status] || map.accepted
+  const s = map[status] || map.acceptéd
   return <span style={{ background: s.bg, color: s.color, borderRadius: 20, padding: '3px 10px', fontSize: 12, fontWeight: 600 }}>{s.label}</span>
 }
 
-export default function PageBenevoles({ profile, activeEventId, activeEventName }) {
+export default function PageBénévoles({ profile, activéEventId, activéEventName }) {
   const [volunteers, setVolunteers] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
@@ -68,27 +68,27 @@ export default function PageBenevoles({ profile, activeEventId, activeEventName 
   const canManage = isAdmin || isOrganizer
 
   useEffect(() => {
-    if (activeEventId) loadBenevoles()
-  }, [activeEventId])
+    if (activéEventId) loadBénévoles()
+  }, [activéEventId])
 
   function showToast(msg) {
     setToast(msg)
     setTimeout(() => setToast(''), 2500)
   }
 
-  async function loadBenevoles() {
+  async function loadBénévoles() {
     setLoading(true)
     // Charger les bénévoles inscrits + leurs profils
     const { data: evVols } = await supabase
       .from('event_volunteers')
       .select('*, profiles(*)')
-      .eq('event_id', activeEventId)
+      .eq('event_id', activéEventId)
 
     // Charger leurs affectations aux postes
     const { data: asgn } = await supabase
       .from('assignments')
       .select('volunteer_id, shifts(positions(name))')
-      .eq('event_id', activeEventId)
+      .eq('event_id', activéEventId)
 
     // Construire map affectations par user
     const affMap = {}
@@ -119,36 +119,36 @@ export default function PageBenevoles({ profile, activeEventId, activeEventName 
   }
 
   async function handleAdd() {
-    if (!selectedUserId) { setAddError('Selectionnez un benevole'); return }
+    if (!selectedUserId) { setAddError('Sélectionnez un bénévole'); return }
     setAdding(true)
     const { error } = await supabase.from('event_volunteers').insert({
-      event_id: activeEventId,
+      event_id: activéEventId,
       user_id: selectedUserId,
       notes,
-      status: 'accepted',
+      status: 'acceptéd',
     })
     setAdding(false)
     if (error) { setAddError(error.message); return }
     setShowAdd(false)
-    loadBenevoles()
-    showToast('Benevole ajoute')
+    loadBénévoles()
+    showToast('Bénévole ajouté')
   }
 
   async function handleRemove(evVolId) {
     await supabase.from('event_volunteers').delete().eq('id', evVolId)
     setRemoveId(null)
-    loadBenevoles()
-    showToast('Benevole retire')
+    loadBénévoles()
+    showToast('Bénévole retiré')
   }
 
-  if (!activeEventId) {
+  if (!activéEventId) {
     return (
       <div>
-        <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>Benevoles</h1>
+        <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>Bénévoles</h1>
         <div style={{ background: '#fff', borderRadius: 12, border: '2px dashed #e5e7eb', padding: 48, textAlign: 'center', marginTop: 20 }}>
           <div style={{ fontSize: 36, marginBottom: 8 }}>📅</div>
-          <div style={{ fontWeight: 600, color: '#374151', marginBottom: 4 }}>Aucun evenement actif</div>
-          <div style={{ fontSize: 13, color: '#9ca3af' }}>Selectionnez un evenement dans la page Evenements pour voir ses benevoles.</div>
+          <div style={{ fontWeight: 600, color: '#374151', marginBottom: 4 }}>Aucun événement actif</div>
+          <div style={{ fontSize: 13, color: '#9ca3af' }}>Sélectionnez un événement dans la page Événements pour voir ses bénévoles.</div>
         </div>
       </div>
     )
@@ -166,14 +166,14 @@ export default function PageBenevoles({ profile, activeEventId, activeEventName 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>Benevoles</h1>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>Bénévoles</h1>
           <p style={{ fontSize: 14, color: '#6b7280' }}>
-            Annuaire des benevoles &mdash; <strong style={{ color: '#1C3829' }}>{activeEventName || 'evenement actif'}</strong>
+            Annuaire des bénévoles &mdash; <strong style={{ color: '#1C3829' }}>{activéEventName || 'événement actif'}</strong>
             {!loading && <span style={{ marginLeft: 8, background: '#f0fdf4', color: '#16a34a', borderRadius: 20, padding: '2px 10px', fontSize: 12, fontWeight: 600 }}>{volunteers.length} inscrits</span>}
           </p>
         </div>
         {canManage && (
-          <button onClick={openAddModal} style={btnPrimary}>+ Ajouter un benevole</button>
+          <button onClick={openAddModal} style={btnPrimary}>+ Ajouter un bénévole</button>
         )}
       </div>
 
@@ -183,7 +183,7 @@ export default function PageBenevoles({ profile, activeEventId, activeEventName 
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
               <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                {['Nom', 'Email', 'Telephone', 'Competences', 'Affectations', 'Statut', ''].map(h => (
+                {['Nom', 'Email', 'Téléphone', 'Compétences', 'Affectations', 'Statut', ''].map(h => (
                   <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.4px', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
@@ -195,9 +195,9 @@ export default function PageBenevoles({ profile, activeEventId, activeEventName 
                 <tr><td colSpan={7}>
                   <div style={{ padding: 48, textAlign: 'center' }}>
                     <div style={{ fontSize: 36, marginBottom: 8 }}>👥</div>
-                    <div style={{ fontWeight: 600, color: '#374151', marginBottom: 4 }}>Aucun benevole</div>
-                    <div style={{ fontSize: 13, color: '#9ca3af', marginBottom: 16 }}>Ajoutez des benevoles a cet evenement.</div>
-                    {canManage && <button onClick={openAddModal} style={btnPrimary}>+ Ajouter un benevole</button>}
+                    <div style={{ fontWeight: 600, color: '#374151', marginBottom: 4 }}>Aucun bénévole</div>
+                    <div style={{ fontSize: 13, color: '#9ca3af', marginBottom: 16 }}>Ajoutéz des bénévoles a cet événement.</div>
+                    {canManage && <button onClick={openAddModal} style={btnPrimary}>+ Ajouter un bénévole</button>}
                   </div>
                 </td></tr>
               ) : volunteers.map((ev, i) => {
@@ -233,7 +233,7 @@ export default function PageBenevoles({ profile, activeEventId, activeEventName 
                         ? ev.affectations.map((a, j) => (
                           <span key={j} style={{ background: '#eff6ff', color: '#2563eb', borderRadius: 20, padding: '2px 8px', fontSize: 11, fontWeight: 600, marginRight: 3, display: 'inline-block', marginBottom: 2 }}>{a}</span>
                         ))
-                        : <span style={{ color: '#9ca3af', fontSize: 12 }}>Non affecte</span>}
+                        : <span style={{ color: '#9ca3af', fontSize: 12 }}>Non affecté</span>}
                     </td>
                     {/* Statut */}
                     <td style={{ padding: '13px 16px' }}>
@@ -255,10 +255,10 @@ export default function PageBenevoles({ profile, activeEventId, activeEventName 
 
       {/* Modal ajouter */}
       {showAdd && (
-        <Modal title="Ajouter un benevole" onClose={() => setShowAdd(false)}>
+        <Modal title="Ajouter un bénévole" onClose={() => setShowAdd(false)}>
           {addError && <div style={{ background: '#fef2f2', color: '#dc2626', borderRadius: 8, padding: '10px 13px', fontSize: 13, marginBottom: 14 }}>{addError}</div>}
           <div style={{ marginBottom: 14 }}>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.4px' }}>Benevole</label>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.4px' }}>Bénévole</label>
             <select style={selectStyle} value={selectedUserId} onChange={e => setSelectedUserId(e.target.value)}>
               <option value="">- Choisir -</option>
               {available.map(p => (
@@ -268,7 +268,7 @@ export default function PageBenevoles({ profile, activeEventId, activeEventName 
           </div>
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.4px' }}>Notes (optionnel)</label>
-            <textarea style={textareaStyle} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes sur ce benevole pour cet evenement..." />
+            <textarea style={textareaStyle} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes sur ce bénévole pour cet événement..." />
           </div>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
             <button onClick={() => setShowAdd(false)} style={btnSecondary}>Annuler</button>
@@ -281,8 +281,8 @@ export default function PageBenevoles({ profile, activeEventId, activeEventName 
 
       {/* Modal retirer */}
       {removeId && (
-        <Modal title="Retirer le benevole" onClose={() => setRemoveId(null)}>
-          <p style={{ fontSize: 14, color: '#374151', marginBottom: 24 }}>Etes-vous sur de vouloir retirer ce benevole de l'evenement ? Ses affectations seront conservees.</p>
+        <Modal title="Retirer le bénévole" onClose={() => setRemoveId(null)}>
+          <p style={{ fontSize: 14, color: '#374151', marginBottom: 24 }}>Êtes-vous sûr de vouloir retirer ce bénévole de l'événement ? Ses affectations seront conservées.</p>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
             <button onClick={() => setRemoveId(null)} style={btnSecondary}>Annuler</button>
             <button onClick={() => handleRemove(removeId)} style={{ ...btnPrimary, background: '#dc2626' }}>Retirer</button>

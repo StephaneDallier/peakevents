@@ -19,14 +19,14 @@ function Modal({ title, onClose, children }) {
 
 const inputStyle = { width: '100%', padding: '10px 13px', border: '1.5px solid #e5e7eb', borderRadius: 8, fontSize: 14, fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box', color: '#111' }
 const btnPrimary = { background: '#1C3829', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 16px', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }
-const btnSecondary = { background: '#fff', color: '#374151', border: '1.5px solid #e5e7eb', borderRadius: 8, padding: '6px 11px', fontWeight: 600, fontSize: 12, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }
-const btnDanger = { background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: 8, padding: '6px 11px', fontWeight: 600, fontSize: 12, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }
-const btnOrange = { background: '#FEF3E9', color: '#F97316', border: '1px solid #fed7aa', borderRadius: 8, padding: '6px 11px', fontWeight: 600, fontSize: 12, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }
+const btnSecondary = { background: '#fff', color: '#374151', border: '1.5px solid #e5e7eb', borderRadius: 6, padding: '4px 8px', fontWeight: 600, fontSize: 11, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }
+const btnDanger = { background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: 6, padding: '4px 8px', fontWeight: 600, fontSize: 11, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }
+const btnOrange = { background: '#FEF3E9', color: '#F97316', border: '1px solid #fed7aa', borderRadius: 6, padding: '4px 8px', fontWeight: 600, fontSize: 11, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }
 
 function Avatar({ first, last }) {
   const initials = ((first?.[0] || '') + (last?.[0] || '')).toUpperCase() || '?'
   return (
-    <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#1C3829', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12, flexShrink: 0 }}>
+    <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#1C3829', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 11, flexShrink: 0 }}>
       {initials}
     </div>
   )
@@ -111,20 +111,20 @@ export default function PageUsers({ profile: currentProfile }) {
   async function changeRole(uid, role) {
     await supabase.from('profiles').update({ role }).eq('id', uid)
     setUsers(prev => prev.map(u => u.id === uid ? { ...u, role } : u))
-    showToast('Role mis a jour')
+    showToast('Role mis à jour')
   }
 
   async function toggleActive(uid, current) {
     await supabase.from('profiles').update({ is_active: !current }).eq('id', uid)
     setUsers(prev => prev.map(u => u.id === uid ? { ...u, is_active: !current } : u))
-    showToast(current ? 'Utilisateur desactive' : 'Utilisateur active')
+    showToast(current ? 'Utilisateur désactivé' : 'Utilisateur activé')
   }
 
   async function handleDelete(uid) {
     await supabase.from('profiles').delete().eq('id', uid)
     setDeleteId(null)
     setUsers(prev => prev.filter(u => u.id !== uid))
-    showToast('Utilisateur supprime')
+    showToast('Utilisateur supprimé')
   }
 
   function openEdit(u) {
@@ -145,22 +145,22 @@ export default function PageUsers({ profile: currentProfile }) {
     if (error) { showToast('Erreur : ' + error.message); return }
     setEditUser(null)
     loadUsers()
-    showToast('Compte mis a jour')
+    showToast('Compte mis à jour')
   }
 
   async function handleResetPassword(email) {
     const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin })
     setResetUser(null)
-    showToast(error ? 'Erreur : ' + error.message : 'Email de reinitialisation envoye')
+    showToast(error ? 'Erreur : ' + error.message : 'Email de réinitialisation envoyé')
   }
 
   async function handleAssign(userId, eventId) {
     const { error } = await supabase.from('event_volunteers').upsert(
-      { user_id: userId, event_id: eventId, status: 'accepted' },
+      { user_id: userId, event_id: eventId, status: 'acceptéd' },
       { onConflict: 'user_id,event_id' }
     )
     setAssignUser(null)
-    showToast(error ? 'Erreur : ' + error.message : "Benevole assigne a l'evenement")
+    showToast(error ? 'Erreur : ' + error.message : "Bénévole assigné a l'événement")
   }
 
   async function handleInvite() {
@@ -170,21 +170,21 @@ export default function PageUsers({ profile: currentProfile }) {
     setInviting(false)
     setShowInvite(false)
     setInviteEmail('')
-    showToast(error ? 'Erreur : ' + error.message : 'Invitation envoyee a ' + inviteEmail)
+    showToast(error ? 'Erreur : ' + error.message : 'Invitation envoyée a ' + inviteEmail)
   }
 
   if (!canAccess) {
     return (
       <div style={{ textAlign: 'center', padding: 80 }}>
         <div style={{ fontSize: 40, marginBottom: 12 }}>🔒</div>
-        <div style={{ fontWeight: 700, fontSize: 16, color: '#374151' }}>Acces non autorise</div>
+        <div style={{ fontWeight: 700, fontSize: 16, color: '#374151' }}>Accès non autorisé</div>
       </div>
     )
   }
 
   const headers = isAdmin
-    ? ['Nom', 'Email', 'Telephone', 'Club', 'Competences', 'Role', 'Statut', 'Actions']
-    : ['Nom', 'Email', 'Telephone', 'Club', 'Statut', 'Actions']
+    ? ['Nom', 'Email', 'Compétences', 'Role', 'Statut', 'Actions']
+    : ['Nom', 'Email', 'Statut', 'Actions']
 
   return (
     <div>
@@ -198,7 +198,7 @@ export default function PageUsers({ profile: currentProfile }) {
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>Utilisateurs</h1>
           <p style={{ fontSize: 14, color: '#6b7280' }}>
-            {isAdmin ? 'Gestion de tous les comptes de la plateforme.' : 'Benevoles inscrits sur vos evenements.'}
+            {isAdmin ? 'Gestion de tous les comptes de la plateforme.' : 'Bénévoles inscrits sur vos événements.'}
           </p>
         </div>
         <button onClick={() => setShowInvite(true)}
@@ -209,11 +209,11 @@ export default function PageUsers({ profile: currentProfile }) {
 
       <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
                 {headers.map(h => (
-                  <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.4px', whiteSpace: 'nowrap' }}>{h}</th>
+                  <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.4px', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -226,7 +226,7 @@ export default function PageUsers({ profile: currentProfile }) {
                     <div style={{ fontSize: 36, marginBottom: 8 }}>👥</div>
                     <div style={{ fontWeight: 600, color: '#374151' }}>Aucun utilisateur</div>
                     <div style={{ fontSize: 13, color: '#9ca3af', marginTop: 4 }}>
-                      {isOrganizer ? 'Aucun benevole inscrit sur vos evenements.' : ''}
+                      {isOrganizer ? 'Aucun bénévole inscrit sur vos événements.' : ''}
                     </div>
                   </div>
                 </td></tr>
@@ -235,8 +235,8 @@ export default function PageUsers({ profile: currentProfile }) {
                 const skills = getSkills(u)
                 return (
                   <tr key={u.id} style={{ borderBottom: i < users.length - 1 ? '1px solid #f3f4f6' : 'none', background: isMe ? '#f0fdf4' : 'transparent' }}>
-                    <td style={{ padding: '13px 16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <td style={{ padding: '10px 12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <Avatar first={u.first_name} last={u.last_name} />
                         <div>
                           <div style={{ fontWeight: 600, fontSize: 14, color: '#111' }}>
@@ -246,11 +246,10 @@ export default function PageUsers({ profile: currentProfile }) {
                         </div>
                       </div>
                     </td>
-                    <td style={{ padding: '13px 16px', fontSize: 12, color: '#6b7280' }}>{u.email || '-'}</td>
-                    <td style={{ padding: '13px 16px', fontSize: 12 }}>{u.phone || '-'}</td>
-                    <td style={{ padding: '13px 16px', fontSize: 12 }}>{u.club || '-'}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 12, color: '#6b7280' }}>{u.email || '-'}</td>
+
                     {isAdmin && (
-                      <td style={{ padding: '13px 16px', maxWidth: 150 }}>
+                      <td style={{ padding: '10px 12px', maxWidth: 120 }}>
                         {skills.slice(0, 3).map((s, j) => (
                           <span key={j} style={{ background: '#f0fdf4', color: '#15803d', borderRadius: 20, padding: '2px 8px', fontSize: 11, fontWeight: 600, marginRight: 3 }}>{s}</span>
                         ))}
@@ -259,27 +258,27 @@ export default function PageUsers({ profile: currentProfile }) {
                       </td>
                     )}
                     {isAdmin && (
-                      <td style={{ padding: '13px 16px' }}>
+                      <td style={{ padding: '10px 12px' }}>
                         <select value={u.role || 'volunteer'} onChange={e => changeRole(u.id, e.target.value)} disabled={isMe}
-                          style={{ padding: '5px 8px', borderRadius: 6, border: '1.5px solid #e5e7eb', fontSize: 12, fontFamily: 'Inter, sans-serif', cursor: isMe ? 'default' : 'pointer', background: '#fff', opacity: isMe ? 0.6 : 1 }}>
-                          <option value="volunteer">Benevole</option>
+                          style={{ padding: '3px 6px', borderRadius: 6, border: '1.5px solid #e5e7eb', fontSize: 11, fontFamily: 'Inter, sans-serif', cursor: isMe ? 'default' : 'pointer', background: '#fff', opacity: isMe ? 0.6 : 1 }}>
+                          <option value="volunteer">Bénévole</option>
                           <option value="organizer">Organisateur</option>
                           <option value="admin">Admin</option>
                         </select>
                       </td>
                     )}
-                    <td style={{ padding: '13px 16px' }}>
+                    <td style={{ padding: '10px 12px' }}>
                       <span style={{ background: u.is_active ? '#dcfce7' : '#fef2f2', color: u.is_active ? '#16a34a' : '#dc2626', borderRadius: 20, padding: '3px 10px', fontSize: 12, fontWeight: 600 }}>
                         {u.is_active ? 'Actif' : 'Inactif'}
                       </span>
                     </td>
-                    <td style={{ padding: '13px 16px' }}>
-                      <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                    <td style={{ padding: '10px 12px' }}>
+                      <div style={{ display: 'flex', gap: 4, flexWrap: 'nowrap', alignItems: 'center' }}>
                         <button onClick={() => openEdit(u)} style={btnSecondary}>Modifier</button>
                         {!isMe && (
                           <>
                             <button onClick={() => toggleActive(u.id, u.is_active)} style={btnSecondary}>
-                              {u.is_active ? 'Desactiver' : 'Activer'}
+                              {u.is_active ? 'Désactiver' : 'Activer'}
                             </button>
                             {isAdmin && (
                               <button onClick={() => setResetUser(u)} style={btnOrange}>Mdp</button>
@@ -302,13 +301,13 @@ export default function PageUsers({ profile: currentProfile }) {
 
       {editUser && (
         <Modal title="Modifier le compte" onClose={() => setEditUser(null)}>
-          <Field label="Prenom">
+          <Field label="Prénom">
             <input style={inputStyle} value={editForm.first_name} onChange={e => setEditForm({ ...editForm, first_name: e.target.value })} />
           </Field>
           <Field label="Nom">
             <input style={inputStyle} value={editForm.last_name} onChange={e => setEditForm({ ...editForm, last_name: e.target.value })} />
           </Field>
-          <Field label="Telephone">
+          <Field label="Téléphone">
             <input style={inputStyle} value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} />
           </Field>
           <Field label="Club">
@@ -317,7 +316,7 @@ export default function PageUsers({ profile: currentProfile }) {
           {isAdmin && (
             <Field label="Role">
               <select style={inputStyle} value={editForm.role} onChange={e => setEditForm({ ...editForm, role: e.target.value })}>
-                <option value="volunteer">Benevole</option>
+                <option value="volunteer">Bénévole</option>
                 <option value="organizer">Organisateur</option>
                 <option value="admin">Admin</option>
               </select>
@@ -333,9 +332,9 @@ export default function PageUsers({ profile: currentProfile }) {
       )}
 
       {resetUser && (
-        <Modal title="Reinitialiser le mot de passe" onClose={() => setResetUser(null)}>
+        <Modal title="Réinitialiser le mot de passe" onClose={() => setResetUser(null)}>
           <p style={{ fontSize: 14, color: '#374151', marginBottom: 20 }}>
-            Un email de reinitialisation sera envoye a <strong>{resetUser.email}</strong>.
+            Un email de réinitialisation sera envoyé a <strong>{resetUser.email}</strong>.
           </p>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
             <button onClick={() => setResetUser(null)} style={btnSecondary}>Annuler</button>
@@ -345,17 +344,17 @@ export default function PageUsers({ profile: currentProfile }) {
       )}
 
       {assignUser && (
-        <Modal title="Assigner a un evenement" onClose={() => setAssignUser(null)}>
+        <Modal title="Assigner a un événement" onClose={() => setAssignUser(null)}>
           <p style={{ fontSize: 14, color: '#374151', marginBottom: 16 }}>
             Assigner <strong>{assignUser.first_name} {assignUser.last_name}</strong> a :
           </p>
           {myEvents.length === 0 ? (
-            <p style={{ fontSize: 13, color: '#9ca3af' }}>Aucun evenement disponible.</p>
+            <p style={{ fontSize: 13, color: '#9ca3af' }}>Aucun événement disponible.</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
               {myEvents.map(ev => (
                 <button key={ev.id} onClick={() => handleAssign(assignUser.id, ev.id)}
-                  style={{ ...btnPrimary, textAlign: 'left', padding: '12px 16px' }}>
+                  style={{ ...btnPrimary, textAlign: 'left', padding: '10px 12px' }}>
                   {ev.name}
                 </button>
               ))}
@@ -368,13 +367,13 @@ export default function PageUsers({ profile: currentProfile }) {
       )}
 
       {showInvite && (
-        <Modal title="Inviter un benevole" onClose={() => setShowInvite(false)}>
+        <Modal title="Inviter un bénévole" onClose={() => setShowInvite(false)}>
           <p style={{ fontSize: 14, color: '#374151', marginBottom: 16 }}>
-            Un email sera envoye avec un lien pour creer son mot de passe.
+            Un email sera envoyé avec un lien pour créer son mot de passe.
           </p>
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.4px' }}>Email</label>
-            <input style={inputStyle} type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="benevole@email.com" />
+            <input style={inputStyle} type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="bénévole@email.com" />
           </div>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
             <button onClick={() => setShowInvite(false)} style={btnSecondary}>Annuler</button>
@@ -388,7 +387,7 @@ export default function PageUsers({ profile: currentProfile }) {
 
       {deleteId && (
         <Modal title="Supprimer l'utilisateur" onClose={() => setDeleteId(null)}>
-          <p style={{ fontSize: 14, color: '#374151', marginBottom: 24 }}>Etes-vous sur de vouloir supprimer cet utilisateur ? Cette action est irreversible.</p>
+          <p style={{ fontSize: 14, color: '#374151', marginBottom: 24 }}>Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action est irréversible.</p>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
             <button onClick={() => setDeleteId(null)} style={btnSecondary}>Annuler</button>
             <button onClick={() => handleDelete(deleteId)} style={{ ...btnPrimary, background: '#dc2626' }}>Supprimer</button>

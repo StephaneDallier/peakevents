@@ -40,15 +40,15 @@ function formatDate(d) {
 function StatusBadge({ status }) {
   const map = {
     draft: { bg: '#f3f4f6', color: '#6b7280', label: 'Brouillon' },
-    published: { bg: '#dcfce7', color: '#16a34a', label: 'Publie' },
-    completed: { bg: '#dbeafe', color: '#2563eb', label: 'Termine' },
+    published: { bg: '#dcfce7', color: '#16a34a', label: 'Publié' },
+    completed: { bg: '#dbeafe', color: '#2563eb', label: 'Terminé' },
     archived: { bg: '#fef3c7', color: '#d97706', label: 'Archive' },
   }
   const s = map[status] || map.draft
   return <span style={{ background: s.bg, color: s.color, borderRadius: 20, padding: '3px 10px', fontSize: 12, fontWeight: 600 }}>{s.label}</span>
 }
 
-export default function PageEvents({ profile, onSetActiveEvent }) {
+export default function PageEvents({ profile, onSetActivéEvent }) {
   const [events, setEvents] = useState([])
   const [filtered, setFiltered] = useState([])
   const [filter, setFilter] = useState('all')
@@ -90,7 +90,7 @@ export default function PageEvents({ profile, onSetActiveEvent }) {
   }
 
   async function handleSave() {
-    if (!form.name || !form.start_date) { setError('Nom et date de debut sont obligatoires'); return }
+    if (!form.name || !form.start_date) { setError('Nom et date de début sont obligatoires'); return }
     setSaving(true); setError('')
     const { data: { user } } = await supabase.auth.getUser()
     const payload = { name: form.name, start_date: form.start_date, end_date: form.end_date || null, location: form.location, description: form.description, status: form.status, created_by: user?.id }
@@ -119,16 +119,16 @@ export default function PageEvents({ profile, onSetActiveEvent }) {
     return { pct, color }
   }
 
-  const filters = [{ key: 'all', label: 'Tous' }, { key: 'draft', label: 'Brouillon' }, { key: 'published', label: 'Publie' }, { key: 'completed', label: 'Termine' }]
+  const filters = [{ key: 'all', label: 'Tous' }, { key: 'draft', label: 'Brouillon' }, { key: 'published', label: 'Publié' }, { key: 'completed', label: 'Terminé' }]
 
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>Evenements</h1>
-          <p style={{ fontSize: 14, color: '#6b7280' }}>Tous les evenements de la plateforme.</p>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>Événements</h1>
+          <p style={{ fontSize: 14, color: '#6b7280' }}>Tous les événements de la plateforme.</p>
         </div>
-        {isAdmin && <button onClick={openCreate} style={btnPrimary}>+ Nouvel evenement</button>}
+        {isAdmin && <button onClick={openCreate} style={btnPrimary}>+ Nouvel événement</button>}
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
@@ -157,9 +157,9 @@ export default function PageEvents({ profile, onSetActiveEvent }) {
                 <tr><td colSpan={6}>
                   <div style={{ padding: 48, textAlign: 'center' }}>
                     <div style={{ fontSize: 36, marginBottom: 8 }}>📅</div>
-                    <div style={{ fontWeight: 600, color: '#374151', marginBottom: 4 }}>Aucun evenement</div>
-                    <div style={{ fontSize: 13, color: '#9ca3af', marginBottom: 16 }}>Creez votre premier evenement pour commencer.</div>
-                    {isAdmin && <button onClick={openCreate} style={btnPrimary}>+ Creer un evenement</button>}
+                    <div style={{ fontWeight: 600, color: '#374151', marginBottom: 4 }}>Aucun événement</div>
+                    <div style={{ fontSize: 13, color: '#9ca3af', marginBottom: 16 }}>Crééz votre premier événement pour commencer.</div>
+                    {isAdmin && <button onClick={openCreate} style={btnPrimary}>+ Créer un événement</button>}
                   </div>
                 </td></tr>
               ) : filtered.map((ev, i) => {
@@ -167,9 +167,9 @@ export default function PageEvents({ profile, onSetActiveEvent }) {
                 return (
                   <tr key={ev.id} style={{ borderBottom: i < filtered.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
                     <td style={{ padding: '14px 16px' }}>
-                      <span onClick={() => onSetActiveEvent && onSetActiveEvent(ev.id, ev.name)}
+                      <span onClick={() => onSetActivéEvent && onSetActivéEvent(ev.id, ev.name)}
                         style={{ fontWeight: 700, color: '#1C3829', cursor: 'pointer' }}
-                        title="Definir comme evenement actif">
+                        title="Definir comme événement actif">
                         {ev.name}
                       </span>
                     </td>
@@ -201,13 +201,13 @@ export default function PageEvents({ profile, onSetActiveEvent }) {
       </div>
 
       {showModal && (
-        <Modal title={editEvent ? "Modifier l'evenement" : 'Nouvel evenement'} onClose={() => setShowModal(false)}>
+        <Modal title={editEvent ? "Modifier l'événement" : 'Nouvel événement'} onClose={() => setShowModal(false)}>
           {error && <div style={{ background: '#fef2f2', color: '#dc2626', borderRadius: 8, padding: '10px 13px', fontSize: 13, marginBottom: 16 }}>{error}</div>}
-          <Field label="Nom de l'evenement *">
+          <Field label="Nom de l'événement *">
             <input style={inputStyle} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Ex: SwimRun du Verdon" />
           </Field>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <Field label="Date de debut *">
+            <Field label="Date de début *">
               <input style={inputStyle} type="date" value={form.start_date} onChange={e => setForm({ ...form, start_date: e.target.value })} />
             </Field>
             <Field label="Date de fin">
@@ -220,25 +220,25 @@ export default function PageEvents({ profile, onSetActiveEvent }) {
           <Field label="Statut">
             <select style={inputStyle} value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
               <option value="draft">Brouillon</option>
-              <option value="published">Publie</option>
-              <option value="completed">Termine</option>
+              <option value="published">Publié</option>
+              <option value="completed">Terminé</option>
             </select>
           </Field>
           <Field label="Description">
-            <textarea style={{ ...inputStyle, height: 80, resize: 'vertical' }} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Description de l'evenement..." />
+            <textarea style={{ ...inputStyle, height: 80, resize: 'vertical' }} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Description de l'événement..." />
           </Field>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
             <button onClick={() => setShowModal(false)} style={btnSecondary}>Annuler</button>
             <button onClick={handleSave} disabled={saving} style={{ ...btnPrimary, opacity: saving ? 0.6 : 1 }}>
-              {saving ? 'Enregistrement...' : editEvent ? 'Enregistrer' : 'Creer'}
+              {saving ? 'Enregistrement...' : editEvent ? 'Enregistrer' : 'Créer'}
             </button>
           </div>
         </Modal>
       )}
 
       {deleteId && (
-        <Modal title="Supprimer l'evenement" onClose={() => setDeleteId(null)}>
-          <p style={{ fontSize: 14, color: '#374151', marginBottom: 24 }}>Etes-vous sur de vouloir supprimer cet evenement ? Cette action est irreversible.</p>
+        <Modal title="Supprimer l'événement" onClose={() => setDeleteId(null)}>
+          <p style={{ fontSize: 14, color: '#374151', marginBottom: 24 }}>Êtes-vous sûr de vouloir supprimer cet événement ? Cette action est irréversible.</p>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
             <button onClick={() => setDeleteId(null)} style={btnSecondary}>Annuler</button>
             <button onClick={() => handleDelete(deleteId)} style={{ ...btnPrimary, background: '#dc2626' }}>Supprimer</button>

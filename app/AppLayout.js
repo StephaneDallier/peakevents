@@ -12,7 +12,7 @@ const Icons = {
   dashboard: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>,
   events: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
   postes: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
-  benevoles: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+  bénévoles: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
   planning: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
   affectations: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
   users: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
@@ -26,13 +26,13 @@ function Sidebar({ page, setPage, profile, onLogout, activeEventName }) {
 
   const navAdmin = [
     { id: 'dashboard', label: 'Tableau de bord', icon: Icons.dashboard },
-    { id: 'events', label: 'Evenements', icon: Icons.events },
+    { id: 'events', label: 'Événements', icon: Icons.events },
     { id: 'users', label: 'Utilisateurs', icon: Icons.users },
   ]
   const navOrganizer = [
     { id: 'dashboard', label: 'Tableau de bord', icon: Icons.dashboard },
     { id: 'postes', label: 'Postes', icon: Icons.postes },
-    { id: 'benevoles', label: 'Benevoles', icon: Icons.benevoles },
+    { id: 'benevoles', label: 'Bénévoles', icon: Icons.benevoles },
     { id: 'planning', label: 'Planning', icon: Icons.planning },
     { id: 'affectations', label: 'Affectations', icon: Icons.affectations },
   ]
@@ -53,10 +53,10 @@ function Sidebar({ page, setPage, profile, onLogout, activeEventName }) {
         <img src={`data:image/png;base64,${LOGO_B64}`} alt="PeakEvents" style={{ height: 36 }} />
       </div>
 
-      {/* Evenement actif */}
+      {/* Événement actif */}
       <div style={{ margin: '0 12px 16px', background: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: '10px 12px' }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Evenement actif</div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>{activeEventName || 'Aucun evenement'}</div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Événement actif</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>{activeEventName || 'Aucun événement'}</div>
         <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>14 juin 2027</div>
       </div>
 
@@ -95,7 +95,7 @@ function Sidebar({ page, setPage, profile, onLogout, activeEventName }) {
         </div>
         <button onClick={onLogout}
           style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '7px 10px', borderRadius: 8, border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.5)', fontFamily: 'Inter, sans-serif', fontSize: 13, cursor: 'pointer' }}>
-          {Icons.logout} Se deconnecter
+          {Icons.logout} Se déconnecter
         </button>
       </div>
     </div>
@@ -122,13 +122,13 @@ function DashboardAdmin() {
         <p style={{ fontSize: 14, color: '#6b7280' }}>Vue d'ensemble de la plateforme</p>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28 }}>
-        <StatCard label="Evenements actifs" value="1" hint="SwimRun Verdon 2027" color="#1C3829" />
-        <StatCard label="Benevoles inscrits" value="0" hint="Sur l'evenement actif" />
-        <StatCard label="Postes crees" value="0" hint="Tous evenements" />
+        <StatCard label="Événements actifs" value="1" hint="SwimRun Verdon 2027" color="#1C3829" />
+        <StatCard label="Bénévoles inscrits" value="0" hint="Sur l'événement actif" />
+        <StatCard label="Postes créés" value="0" hint="Tous événements" />
         <StatCard label="Utilisateurs" value="3" hint="dont 1 admin" />
       </div>
       <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 24 }}>
-        <div style={{ fontSize: 16, fontWeight: 700, color: '#111', marginBottom: 16 }}>Evenements recents</div>
+        <div style={{ fontSize: 16, fontWeight: 700, color: '#111', marginBottom: 16 }}>Événements recents</div>
         <div style={{ background: '#f9fafb', borderRadius: 8, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <div style={{ fontWeight: 600, fontSize: 14, color: '#111' }}>SwimRun du Verdon</div>
@@ -152,18 +152,18 @@ function DashboardOrganizer({ profile }) {
         <p style={{ fontSize: 14, color: '#6b7280' }}>SwimRun du Verdon &mdash; 14 juin 2027</p>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28 }}>
-        <StatCard label="Postes crees" value="0" hint="Creez votre premier poste" color="#1C3829" />
+        <StatCard label="Postes créés" value="0" hint="Crééz votre premier poste" color="#1C3829" />
         <StatCard label="Creneaux definis" value="0" hint="-" />
-        <StatCard label="Benevoles affectes" value="0" hint="-" />
+        <StatCard label="Bénévoles affectés" value="0" hint="-" />
         <StatCard label="Postes incomplets" value="0" hint="Tout est bon !" color="#16a34a" />
       </div>
       <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 24 }}>
-        <div style={{ fontSize: 16, fontWeight: 700, color: '#111', marginBottom: 8 }}>Prochaines etapes</div>
+        <div style={{ fontSize: 16, fontWeight: 700, color: '#111', marginBottom: 8 }}>Prochaines étapes</div>
         {[
-          { num: 1, text: 'Creez vos postes (ravitaillement, securite, accueil...)' },
-          { num: 2, text: 'Definissez les creneaux horaires et le nombre de benevoles' },
-          { num: 3, text: 'Invitez vos benevoles sur la plateforme' },
-          { num: 4, text: 'Affectez les benevoles aux postes' },
+          { num: 1, text: 'Crééz vos postes (ravitaillement, securite, accueil...)' },
+          { num: 2, text: 'Définissez les creneaux horaires et le nombre de bénévoles' },
+          { num: 3, text: 'Invitez vos bénévoles sur la plateforme' },
+          { num: 4, text: 'Affectéz les bénévoles aux postes' },
         ].map(s => (
           <div key={s.num} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '10px 0', borderBottom: '1px solid #f3f4f6' }}>
             <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#1C3829', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{s.num}</div>
@@ -181,13 +181,13 @@ function DashboardVolunteer({ profile }) {
     <div>
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>
-          Bonjour {profile?.first_name || 'Benevole'} !
+          Bonjour {profile?.first_name || 'Bénévole'} !
         </h1>
-        <p style={{ fontSize: 14, color: '#6b7280' }}>Votre espace benevole &mdash; SwimRun du Verdon 2027</p>
+        <p style={{ fontSize: 14, color: '#6b7280' }}>Votre espace bénévole &mdash; SwimRun du Verdon 2027</p>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
         <StatCard label="Mes missions" value="0" hint="Aucune affectation pour l'instant" />
-        <StatCard label="Prochain evenement" value="14 juin" hint="SwimRun du Verdon 2027" color="#1C3829" />
+        <StatCard label="Prochain événement" value="14 juin" hint="SwimRun du Verdon 2027" color="#1C3829" />
         <StatCard label="Statut" value="Inscrit" hint="Bienvenue !" color="#16a34a" />
       </div>
       <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 24 }}>
@@ -206,10 +206,10 @@ function PagePlaceholder({ title }) {
   return (
     <div>
       <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>{title}</h1>
-      <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 28 }}>Cette page est en cours de developpement.</p>
+      <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 28 }}>Cette page est en cours de développement.</p>
       <div style={{ background: '#fff', borderRadius: 12, border: '2px dashed #e5e7eb', padding: 48, textAlign: 'center', color: '#9ca3af' }}>
         <div style={{ fontSize: 40, marginBottom: 12 }}>🚧</div>
-        <div style={{ fontSize: 15, fontWeight: 600 }}>A venir</div>
+        <div style={{ fontSize: 15, fontWeight: 600 }}>À venir</div>
       </div>
     </div>
   )
@@ -241,10 +241,10 @@ export default function AppLayout({ session, onLogout }) {
     if (page === 'users') return <PageUsers profile={profile} activeEventId={activeEventId} />
     if (page === 'benevoles') return <PageBenevoles profile={profile} activeEventId={activeEventId} activeEventName={activeEventName} />
     const titles = {
-      events: 'Evenements',
+      events: 'Événements',
       users: 'Utilisateurs',
       postes: 'Postes',
-      benevoles: 'Benevoles',
+      benevoles: 'Bénévoles',
       planning: 'Planning',
       affectations: 'Affectations',
       missions: 'Mes missions',
