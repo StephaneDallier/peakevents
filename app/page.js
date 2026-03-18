@@ -91,7 +91,7 @@ export default function Home() {
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={() => setView('register')}
             style={{ background: '#fff', color: '#1C3829', border: '1.5px solid #1C3829', borderRadius: 8, padding: '8px 18px', fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
-            S's'inscrire
+            S'inscrire
           </button>
           <button onClick={() => setView('login')}
             style={{ background: '#F97316', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 20px', fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
@@ -106,13 +106,13 @@ export default function Home() {
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)' }} />
         <div style={{ position: 'absolute', top: '50%', left: 60, transform: 'translateY(-50%)', maxWidth: 560 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', background: '#F97316', color: '#fff', borderRadius: 20, padding: '5px 16px', fontSize: 12, fontWeight: 600, marginBottom: 20 }}>
-            Événement pilotee &mdash; SwimRun du Verdon 2027
+            Événement pilote &mdash; SwimRun du Verdon 2027
           </div>
           <h1 style={{ fontSize: 52, fontWeight: 800, color: '#fff', lineHeight: 1.1, marginBottom: 16, letterSpacing: -1 }}>
             Organisez vos<br />événements sportifs<br />outdoor
           </h1>
           <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.85)', marginBottom: 28, lineHeight: 1.6 }}>
-            Centralisezz la gestion de vos bénévoles, postes et plannings.<br />Fini les fichiers Excel et les groupes WhatsApp.
+            Centralisez la gestion de vos bénévoles, postes et plannings.<br />Fini les fichiers Excel et les groupes WhatsApp.
           </p>
           <div style={{ display: 'flex', gap: 12 }}>
             <button onClick={() => setView('login')}
@@ -175,7 +175,7 @@ export default function Home() {
         </form>
         <div style={{ textAlign: 'center', marginTop: 16, fontSize: 13, color: '#6b7280' }}>
           Pas encore de compte ?{' '}
-          <span onClick={() => setView('register')} style={{ color: '#1C3829', fontWeight: 600, cursor: 'pointer' }}>S's'inscrire</span>
+          <span onClick={() => setView('register')} style={{ color: '#1C3829', fontWeight: 600, cursor: 'pointer' }}>S'inscrire</span>
         </div>
         <button onClick={() => setView('landing')} style={{ display: 'block', textAlign: 'center', width: '100%', marginTop: 8, fontSize: 13, color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
           Retour
