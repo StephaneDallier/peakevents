@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { LOGO_B64 } from '../lib/logo'
 import PageEvents from './PageEvents'
 import PageUsers from './PageUsers'
+import PageBenevoles from './PageBenevoles'
 
 // --- ICONES SVG ---
 const Icons = {
@@ -238,6 +239,7 @@ export default function AppLayout({ session, onLogout }) {
     }
     if (page === 'events') return <PageEvents profile={profile} onSetActiveEvent={(id, name) => { setActiveEventId(id); setActiveEventName(name) }} />
     if (page === 'users') return <PageUsers profile={profile} activeEventId={activeEventId} />
+    if (page === 'benevoles') return <PageBenevoles profile={profile} activeEventId={activeEventId} activeEventName={activeEventName} />
     const titles = {
       events: 'Evenements',
       users: 'Utilisateurs',

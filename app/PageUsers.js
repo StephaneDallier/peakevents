@@ -50,7 +50,7 @@ function Field({ label, children }) {
   )
 }
 
-export default function PageUsers({ profile: currentProfile, activeEventId }) {
+export default function PageUsers({ profile: currentProfile }) {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [deleteId, setDeleteId] = useState(null)
@@ -61,21 +61,16 @@ export default function PageUsers({ profile: currentProfile, activeEventId }) {
   const [myEvents, setMyEvents] = useState([])
   const [toast, setToast] = useState('')
   const [saving, setSaving] = useState(false)
+  const [showInvite, setShowInvite] = useState(false)
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviting, setInviting] = useState(false)
 
   const isAdmin = currentProfile?.role === 'admin'
   const isOrganizer = currentProfile?.role === 'organizer'
-
-  // Bénévole → pas accès
-  if (!isAdmin && !isOrganizer) {
-    return (
-      <div style={{ textAlign: 'center', padding: 80 }}>
-        <div style={{ fontSize: 40, marginBottom: 12 }}>🔒</div>
-        <div style={{ fontWeight: 700, fontSize: 16, color: '#374151' }}>Acces non autorise</div>
-      </div>
-    )
-  }
+  const canAccess = isAdmin || isOrganizer
 
   useEffect(() => {
+    if (!canAccess) return
     loadUsers()
     loadMyEvents()
   }, [])
@@ -86,17 +81,10 @@ export default function PageUsers({ profile: currentProfile, activeEventId }) {
       const { data } = await supabase.from('profiles').select('*').order('last_name')
       setUsers(data || [])
     } else if (isOrganizer) {
-      // Bénévoles inscrits sur les événements de cet organisateur
-      const { data: orgEvents } = await supabase
-        .from('event_organizers')
-        .select('event_id')
-        .eq('user_id', currentProfile.id)
+      const { data: orgEvents } = await supabase.from('event_organizers').select('event_id').eq('user_id', currentProfile.id)
       const eventIds = (orgEvents || []).map(e => e.event_id)
       if (eventIds.length === 0) { setUsers([]); setLoading(false); return }
-      const { data: evVols } = await supabase
-        .from('event_volunteers')
-        .select('user_id, status, event_id')
-        .in('event_id', eventIds)
+      const { data: evVols } = await supabase.from('event_volunteers').select('user_id').in('event_id', eventIds)
       const userIds = [...new Set((evVols || []).map(v => v.user_id))]
       if (userIds.length === 0) { setUsers([]); setLoading(false); return }
       const { data } = await supabase.from('profiles').select('*').in('id', userIds).eq('role', 'volunteer').order('last_name')
@@ -110,10 +98,7 @@ export default function PageUsers({ profile: currentProfile, activeEventId }) {
       const { data } = await supabase.from('events').select('id, name').order('start_date')
       setMyEvents(data || [])
     } else {
-      const { data } = await supabase
-        .from('event_organizers')
-        .select('event_id, events(id, name)')
-        .eq('user_id', currentProfile.id)
+      const { data } = await supabase.from('event_organizers').select('event_id, events(id, name)').eq('user_id', currentProfile.id)
       setMyEvents((data || []).map(d => d.events).filter(Boolean))
     }
   }
@@ -144,7 +129,7 @@ export default function PageUsers({ profile: currentProfile, activeEventId }) {
 
   function openEdit(u) {
     setEditUser(u)
-    setEditForm({ first_name: u.first_name || '', last_name: u.last_name || '', email: u.email || '', phone: u.phone || '', club: u.club || '', role: u.role || 'volunteer' })
+    setEditForm({ first_name: u.first_name || '', last_name: u.last_name || '', phone: u.phone || '', club: u.club || '', role: u.role || 'volunteer' })
   }
 
   async function handleSaveEdit() {
@@ -164,9 +149,7 @@ export default function PageUsers({ profile: currentProfile, activeEventId }) {
   }
 
   async function handleResetPassword(email) {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin,
-    })
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin })
     setResetUser(null)
     showToast(error ? 'Erreur : ' + error.message : 'Email de reinitialisation envoye')
   }
@@ -177,7 +160,26 @@ export default function PageUsers({ profile: currentProfile, activeEventId }) {
       { onConflict: 'user_id,event_id' }
     )
     setAssignUser(null)
-    showToast(error ? 'Erreur : ' + error.message : 'Benevole assigne a l\'evenement')
+    showToast(error ? 'Erreur : ' + error.message : "Benevole assigne a l'evenement")
+  }
+
+  async function handleInvite() {
+    if (!inviteEmail) return
+    setInviting(true)
+    const { error } = await supabase.auth.resetPasswordForEmail(inviteEmail, { redirectTo: window.location.origin })
+    setInviting(false)
+    setShowInvite(false)
+    setInviteEmail('')
+    showToast(error ? 'Erreur : ' + error.message : 'Invitation envoyee a ' + inviteEmail)
+  }
+
+  if (!canAccess) {
+    return (
+      <div style={{ textAlign: 'center', padding: 80 }}>
+        <div style={{ fontSize: 40, marginBottom: 12 }}>🔒</div>
+        <div style={{ fontWeight: 700, fontSize: 16, color: '#374151' }}>Acces non autorise</div>
+      </div>
+    )
   }
 
   const headers = isAdmin
@@ -186,18 +188,23 @@ export default function PageUsers({ profile: currentProfile, activeEventId }) {
 
   return (
     <div>
-      {/* Toast */}
       {toast && (
         <div style={{ position: 'fixed', bottom: 24, right: 24, background: '#1C3829', color: '#fff', borderRadius: 10, padding: '12px 20px', fontSize: 14, fontWeight: 600, zIndex: 2000, boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
           {toast}
         </div>
       )}
 
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>Utilisateurs</h1>
-        <p style={{ fontSize: 14, color: '#6b7280' }}>
-          {isAdmin ? 'Gestion de tous les comptes de la plateforme.' : 'Benevoles inscrits sur vos evenements.'}
-        </p>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
+        <div>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>Utilisateurs</h1>
+          <p style={{ fontSize: 14, color: '#6b7280' }}>
+            {isAdmin ? 'Gestion de tous les comptes de la plateforme.' : 'Benevoles inscrits sur vos evenements.'}
+          </p>
+        </div>
+        <button onClick={() => setShowInvite(true)}
+          style={{ background: '#F97316', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 18px', fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'Inter, sans-serif', flexShrink: 0 }}>
+          + Inviter par email
+        </button>
       </div>
 
       <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
@@ -228,7 +235,6 @@ export default function PageUsers({ profile: currentProfile, activeEventId }) {
                 const skills = getSkills(u)
                 return (
                   <tr key={u.id} style={{ borderBottom: i < users.length - 1 ? '1px solid #f3f4f6' : 'none', background: isMe ? '#f0fdf4' : 'transparent' }}>
-                    {/* Nom */}
                     <td style={{ padding: '13px 16px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <Avatar first={u.first_name} last={u.last_name} />
@@ -240,13 +246,9 @@ export default function PageUsers({ profile: currentProfile, activeEventId }) {
                         </div>
                       </div>
                     </td>
-                    {/* Email */}
                     <td style={{ padding: '13px 16px', fontSize: 12, color: '#6b7280' }}>{u.email || '-'}</td>
-                    {/* Tel */}
                     <td style={{ padding: '13px 16px', fontSize: 12 }}>{u.phone || '-'}</td>
-                    {/* Club */}
                     <td style={{ padding: '13px 16px', fontSize: 12 }}>{u.club || '-'}</td>
-                    {/* Competences (admin seulement) */}
                     {isAdmin && (
                       <td style={{ padding: '13px 16px', maxWidth: 150 }}>
                         {skills.slice(0, 3).map((s, j) => (
@@ -256,7 +258,6 @@ export default function PageUsers({ profile: currentProfile, activeEventId }) {
                         {skills.length === 0 && <span style={{ color: '#9ca3af', fontSize: 12 }}>-</span>}
                       </td>
                     )}
-                    {/* Role (admin seulement) */}
                     {isAdmin && (
                       <td style={{ padding: '13px 16px' }}>
                         <select value={u.role || 'volunteer'} onChange={e => changeRole(u.id, e.target.value)} disabled={isMe}
@@ -267,13 +268,11 @@ export default function PageUsers({ profile: currentProfile, activeEventId }) {
                         </select>
                       </td>
                     )}
-                    {/* Statut */}
                     <td style={{ padding: '13px 16px' }}>
                       <span style={{ background: u.is_active ? '#dcfce7' : '#fef2f2', color: u.is_active ? '#16a34a' : '#dc2626', borderRadius: 20, padding: '3px 10px', fontSize: 12, fontWeight: 600 }}>
                         {u.is_active ? 'Actif' : 'Inactif'}
                       </span>
                     </td>
-                    {/* Actions */}
                     <td style={{ padding: '13px 16px' }}>
                       <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                         <button onClick={() => openEdit(u)} style={btnSecondary}>Modifier</button>
@@ -285,7 +284,7 @@ export default function PageUsers({ profile: currentProfile, activeEventId }) {
                             {isAdmin && (
                               <button onClick={() => setResetUser(u)} style={btnOrange}>Mdp</button>
                             )}
-                            {(isOrganizer || isAdmin) && (
+                            {(isAdmin || isOrganizer) && (
                               <button onClick={() => setAssignUser(u)} style={btnOrange}>Assigner</button>
                             )}
                             <button onClick={() => setDeleteId(u.id)} style={btnDanger}>Suppr.</button>
@@ -301,7 +300,6 @@ export default function PageUsers({ profile: currentProfile, activeEventId }) {
         </div>
       </div>
 
-      {/* Modal modifier */}
       {editUser && (
         <Modal title="Modifier le compte" onClose={() => setEditUser(null)}>
           <Field label="Prenom">
@@ -334,7 +332,6 @@ export default function PageUsers({ profile: currentProfile, activeEventId }) {
         </Modal>
       )}
 
-      {/* Modal reset mdp */}
       {resetUser && (
         <Modal title="Reinitialiser le mot de passe" onClose={() => setResetUser(null)}>
           <p style={{ fontSize: 14, color: '#374151', marginBottom: 20 }}>
@@ -342,12 +339,11 @@ export default function PageUsers({ profile: currentProfile, activeEventId }) {
           </p>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
             <button onClick={() => setResetUser(null)} style={btnSecondary}>Annuler</button>
-            <button onClick={() => handleResetPassword(resetUser.email)} style={btnOrange}>Envoyer l'email</button>
+            <button onClick={() => handleResetPassword(resetUser.email)} style={btnOrange}>Envoyer</button>
           </div>
         </Modal>
       )}
 
-      {/* Modal assigner (organisateur) */}
       {assignUser && (
         <Modal title="Assigner a un evenement" onClose={() => setAssignUser(null)}>
           <p style={{ fontSize: 14, color: '#374151', marginBottom: 16 }}>
@@ -371,7 +367,25 @@ export default function PageUsers({ profile: currentProfile, activeEventId }) {
         </Modal>
       )}
 
-      {/* Modal suppression */}
+      {showInvite && (
+        <Modal title="Inviter un benevole" onClose={() => setShowInvite(false)}>
+          <p style={{ fontSize: 14, color: '#374151', marginBottom: 16 }}>
+            Un email sera envoye avec un lien pour creer son mot de passe.
+          </p>
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.4px' }}>Email</label>
+            <input style={inputStyle} type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="benevole@email.com" />
+          </div>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+            <button onClick={() => setShowInvite(false)} style={btnSecondary}>Annuler</button>
+            <button onClick={handleInvite} disabled={inviting || !inviteEmail}
+              style={{ background: '#F97316', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 18px', fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'Inter, sans-serif', opacity: inviting || !inviteEmail ? 0.6 : 1 }}>
+              {inviting ? 'Envoi...' : "Envoyer l'invitation"}
+            </button>
+          </div>
+        </Modal>
+      )}
+
       {deleteId && (
         <Modal title="Supprimer l'utilisateur" onClose={() => setDeleteId(null)}>
           <p style={{ fontSize: 14, color: '#374151', marginBottom: 24 }}>Etes-vous sur de vouloir supprimer cet utilisateur ? Cette action est irreversible.</p>
