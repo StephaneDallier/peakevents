@@ -10,6 +10,7 @@ import PagePostes from './PagePostes'
 import PageAffectations from './PageAffectations'
 import PagePlanning from './PagePlanning'
 import PageMissions from './PageMissions'
+import PageProjet from './PageProjet'
 import PageEventDetail from './PageEventDetail'
 
 const Icons = {
@@ -22,7 +23,7 @@ const Icons = {
   users: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
   missions: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
   admin: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 1.41 14.14M4.93 4.93A10 10 0 0 0 3.52 19.07"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>,
-  logout: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
+  projet: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>,
   menu: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>,
   close: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
 }
@@ -94,6 +95,7 @@ function SidebarContent({ page, setPage, profile, onLogout, activeEventName, onC
           <NavItem item={{ id: 'benevoles', label: 'Bénévoles', icon: Icons.benevoles }} active={page === 'benevoles'} onClick={() => nav('benevoles')} />
           <NavItem item={{ id: 'affectations', label: 'Affectations', icon: Icons.affectations }} active={page === 'affectations'} onClick={() => nav('affectations')} />
           <NavItem item={{ id: 'planning', label: 'Planning', icon: Icons.planning }} active={page === 'planning'} onClick={() => nav('planning')} />
+          <NavItem item={{ id: 'projet', label: 'Projet', icon: Icons.projet }} active={page === 'projet'} onClick={() => nav('projet')} />
           <NavSection label="Équipe" />
           <NavItem item={{ id: 'users', label: 'Mes bénévoles', icon: Icons.users }} active={page === 'users'} onClick={() => nav('users')} />
         </>)}
@@ -422,6 +424,7 @@ export default function AppLayout({ session, onLogout }) {
     if (page === 'affectations') return <PageAffectations profile={profile} activeEventId={activeEventId} activeEventName={activeEventName} />
     if (page === 'planning') return <PagePlanning profile={profile} activeEventId={activeEventId} activeEventName={activeEventName} />
     if (page === 'missions') return <PageMissions profile={profile} />
+    if (page === 'projet') return <PageProjet profile={profile} activeEventId={activeEventId} activeEventName={activeEventName} />
     return null
   }
 
