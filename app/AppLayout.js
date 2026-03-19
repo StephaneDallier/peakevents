@@ -10,6 +10,7 @@ import PagePostes from './PagePostes'
 import PageAffectations from './PageAffectations'
 import PagePlanning from './PagePlanning'
 import PageMissions from './PageMissions'
+import PageEventDetail from './PageEventDetail'
 
 const Icons = {
   dashboard: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>,
@@ -134,22 +135,62 @@ function StatCard({ label, value, hint, color, onClick }) {
   )
 }
 
-function DashboardAdmin({ setPage, stats }) {
+function DashboardAdmin({ setPage, stats, activeEventName }) {
+  const remplissage = stats.postes > 0 ? Math.round((stats.affectations / (stats.postes * 2)) * 100) : 0
+  const remplissagePct = Math.min(remplissage, 100)
+  const remplissageColor = remplissagePct >= 80 ? '#16a34a' : remplissagePct >= 40 ? '#F97316' : '#dc2626'
+
   return (
     <div>
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>Tableau de bord</h1>
-        <p style={{ fontSize: 14, color: '#6b7280' }}>Vue d'ensemble de la plateforme</p>
+        <p style={{ fontSize: 14, color: '#6b7280' }}>Vue d'ensemble &mdash; <strong style={{ color: '#1C3829' }}>{activeEventName || 'aucun événement actif'}</strong></p>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 24 }}>
+
+      {/* Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
         <StatCard label="Événements" value={stats.events} hint="sur la plateforme" color="#1C3829" onClick={() => setPage('events')} />
-        <StatCard label="Utilisateurs" value={stats.users} hint="comptes actifs" onClick={() => setPage('users')} />
-        <StatCard label="Postes" value={stats.postes} hint="événement actif" onClick={() => setPage('postes')} />
-        <StatCard label="Bénévoles" value={stats.benevoles} hint="événement actif" onClick={() => setPage('benevoles')} />
+        <StatCard label="Utilisateurs" value={stats.users} hint="comptes enregistrés" onClick={() => setPage('users')} />
+        <StatCard label="Postes" value={stats.postes} hint="événement actif" color="#7c3aed" onClick={() => setPage('postes')} />
+        <StatCard label="Bénévoles" value={stats.benevoles} hint="inscrits sur l'événement" color="#0891b2" onClick={() => setPage('benevoles')} />
       </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+        {/* Remplissage */}
+        <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 24 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 16 }}>Remplissage des postes</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+            <div style={{ flex: 1, height: 10, background: '#f3f4f6', borderRadius: 5, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${remplissagePct}%`, background: remplissageColor, borderRadius: 5, transition: 'width 0.5s' }} />
+            </div>
+            <span style={{ fontSize: 18, fontWeight: 800, color: remplissageColor, minWidth: 45 }}>{remplissagePct}%</span>
+          </div>
+          <div style={{ fontSize: 12, color: '#9ca3af' }}>{stats.affectations} affectations sur {stats.postes} postes</div>
+        </div>
+
+        {/* Événements récents */}
+        <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 24 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 12 }}>Répartition des rôles</div>
+          {[
+            { label: 'Administrateurs', value: stats.admins || 0, color: '#1C3829' },
+            { label: 'Organisateurs', value: stats.organizers || 0, color: '#2563eb' },
+            { label: 'Bénévoles', value: stats.volunteers || 0, color: '#0891b2' },
+          ].map(r => (
+            <div key={r.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: r.color }} />
+                <span style={{ fontSize: 13, color: '#374151' }}>{r.label}</span>
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>{r.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Accès rapides */}
       <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 20 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, color: '#111', marginBottom: 12 }}>Accès rapides</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 8 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 12 }}>Accès rapides</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 8 }}>
           {[
             { label: 'Administration', page: 'admin', icon: '⚙️' },
             { label: 'Événements', page: 'events', icon: '📅' },
@@ -159,7 +200,7 @@ function DashboardAdmin({ setPage, stats }) {
             { label: 'Planning', page: 'planning', icon: '📊' },
           ].map(a => (
             <button key={a.page} onClick={() => setPage(a.page)}
-              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: 14, color: '#374151', fontWeight: 500, textAlign: 'left' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#374151', fontWeight: 500, textAlign: 'left' }}>
               <span>{a.icon}</span>{a.label}
             </button>
           ))}
@@ -197,44 +238,106 @@ function PageAdmin({ setPage }) {
   )
 }
 
-function DashboardOrganizer({ profile, setPage }) {
+function DashboardOrganizer({ profile, setPage, stats, activeEventName }) {
+  const remplissagePct = stats.postes > 0 ? Math.min(Math.round((stats.affectations / (stats.postes * 2)) * 100), 100) : 0
+  const remplissageColor = remplissagePct >= 80 ? '#16a34a' : remplissagePct >= 40 ? '#F97316' : '#dc2626'
+
   return (
     <div>
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>Bonjour {profile?.first_name || 'Organisateur'} !</h1>
-        <p style={{ fontSize: 14, color: '#6b7280' }}>Bienvenue sur votre espace organisateur</p>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>
+          Bonjour {profile?.first_name || 'Organisateur'} !
+        </h1>
+        <p style={{ fontSize: 14, color: '#6b7280' }}>
+          Événement actif : <strong style={{ color: '#1C3829' }}>{activeEventName || 'aucun'}</strong>
+        </p>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
-        {[
-          { icon: '📅', title: 'Mes événements', page: 'events' },
-          { icon: '📍', title: 'Postes', page: 'postes' },
-          { icon: '👥', title: 'Bénévoles', page: 'benevoles' },
-          { icon: '✅', title: 'Affectations', page: 'affectations' },
-          { icon: '📊', title: 'Planning', page: 'planning' },
-          { icon: '👤', title: 'Mon équipe', page: 'users' },
-        ].map(item => (
-          <button key={item.page} onClick={() => setPage(item.page)}
-            style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: '20px 16px', cursor: 'pointer', textAlign: 'center', fontFamily: 'Inter, sans-serif' }}>
-            <div style={{ fontSize: 28, marginBottom: 8 }}>{item.icon}</div>
-            <div style={{ fontWeight: 700, fontSize: 14, color: '#111' }}>{item.title}</div>
-          </button>
-        ))}
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+        <StatCard label="Postes" value={stats.postes} hint="créés" color="#1C3829" onClick={() => setPage('postes')} />
+        <StatCard label="Bénévoles" value={stats.benevoles} hint="inscrits" color="#0891b2" onClick={() => setPage('benevoles')} />
+        <StatCard label="Affectations" value={stats.affectations} hint="réalisées" color="#16a34a" onClick={() => setPage('affectations')} />
+        <StatCard label="Remplissage" value={`${remplissagePct}%`} hint="des postes" color={remplissageColor} />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 24 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 16 }}>Gestion de l'événement</div>
+          {[
+            { icon: '📍', label: 'Gérer les postes', page: 'postes' },
+            { icon: '👥', label: 'Gérer les bénévoles', page: 'benevoles' },
+            { icon: '✅', label: 'Affecter les bénévoles', page: 'affectations' },
+            { icon: '📊', label: 'Voir le planning', page: 'planning' },
+          ].map(a => (
+            <button key={a.page} onClick={() => setPage(a.page)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 12px', marginBottom: 6, background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: 14, color: '#374151', fontWeight: 500, textAlign: 'left' }}>
+              <span>{a.icon}</span>{a.label}
+            </button>
+          ))}
+        </div>
+        <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 24 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 16 }}>Progression</div>
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <span style={{ fontSize: 13, color: '#374151' }}>Remplissage des postes</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: remplissageColor }}>{remplissagePct}%</span>
+            </div>
+            <div style={{ height: 8, background: '#f3f4f6', borderRadius: 4, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${remplissagePct}%`, background: remplissageColor, borderRadius: 4 }} />
+            </div>
+          </div>
+          {stats.postes === 0 && (
+            <div style={{ fontSize: 13, color: '#9ca3af', fontStyle: 'italic' }}>Commencez par créer des postes.</div>
+          )}
+          {stats.benevoles === 0 && stats.postes > 0 && (
+            <div style={{ fontSize: 13, color: '#9ca3af', fontStyle: 'italic' }}>Invitez des bénévoles à rejoindre l'événement.</div>
+          )}
+          {stats.benevoles > 0 && stats.affectations === 0 && (
+            <div style={{ fontSize: 13, color: '#F97316', fontStyle: 'italic' }}>Des bénévoles sont inscrits — pensez à les affecter !</div>
+          )}
+          {stats.affectations > 0 && (
+            <div style={{ fontSize: 13, color: '#16a34a' }}>{stats.affectations} affectation(s) réalisée(s) ✓</div>
+          )}
+        </div>
       </div>
     </div>
   )
 }
 
-function DashboardVolunteer({ profile }) {
+function DashboardVolunteer({ profile, stats, activeEventName, setPage }) {
   return (
     <div>
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>Bonjour {profile?.first_name || 'Bénévole'} !</h1>
-        <p style={{ fontSize: 14, color: '#6b7280' }}>Bienvenue sur votre espace bénévole</p>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>
+          Bonjour {profile?.first_name || 'Bénévole'} !
+        </h1>
+        <p style={{ fontSize: 14, color: '#6b7280' }}>
+          {activeEventName ? <>Prochain événement : <strong style={{ color: '#1C3829' }}>{activeEventName}</strong></> : 'Bienvenue sur votre espace bénévole'}
+        </p>
       </div>
-      <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 24, textAlign: 'center' }}>
-        <div style={{ fontSize: 40, marginBottom: 12 }}>🎯</div>
-        <div style={{ fontWeight: 600, fontSize: 15, color: '#374151', marginBottom: 8 }}>Consultez vos missions</div>
-        <div style={{ fontSize: 13, color: '#9ca3af' }}>Utilisez le menu pour accéder à vos missions et votre planning.</div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
+        <StatCard label="Mes missions" value={stats.missions || 0} hint="affectations en cours" color="#1C3829" onClick={() => setPage('missions')} />
+        <StatCard label="Événement" value={activeEventName ? '1' : '0'} hint={activeEventName || 'aucun'} color="#0891b2" />
+        <StatCard label="Statut" value={profile?.is_active ? 'Actif' : 'Inactif'} hint="votre compte" color={profile?.is_active ? '#16a34a' : '#dc2626'} />
+      </div>
+
+      <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 24 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 16 }}>Mes actions rapides</div>
+        {[
+          { icon: '🎯', label: 'Voir mes missions', page: 'missions' },
+          { icon: '📊', label: 'Mon planning', page: 'planning' },
+        ].map(a => (
+          <button key={a.page} onClick={() => setPage(a.page)}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '12px 14px', marginBottom: 8, background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: 14, color: '#374151', fontWeight: 500, textAlign: 'left' }}>
+            <span>{a.icon}</span>{a.label}
+          </button>
+        ))}
+        {(stats.missions || 0) === 0 && (
+          <div style={{ fontSize: 13, color: '#9ca3af', fontStyle: 'italic', marginTop: 8 }}>
+            Aucune mission pour le moment. L'organisateur vous contactera prochainement.
+          </div>
+        )}
       </div>
     </div>
   )
@@ -245,7 +348,8 @@ export default function AppLayout({ session, onLogout }) {
   const [page, setPage] = useState('dashboard')
   const [activeEventId, setActiveEventId] = useState(null)
   const [activeEventName, setActiveEventName] = useState(null)
-  const [stats, setStats] = useState({ events: 0, users: 0, postes: 0, benevoles: 0 })
+  const [stats, setStats] = useState({ events: 0, users: 0, postes: 0, benevoles: 0, affectations: 0, admins: 0, organizers: 0, volunteers: 0, missions: 0 })
+  const [selectedEventId, setSelectedEventId] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
 
@@ -268,8 +372,18 @@ export default function AppLayout({ session, onLogout }) {
       .then(({ data }) => { if (data?.[0]) { setActiveEventId(data[0].id); setActiveEventName(data[0].name) } })
     Promise.all([
       supabase.from('events').select('id', { count: 'exact' }),
-      supabase.from('profiles').select('id', { count: 'exact' }),
-    ]).then(([evts, users]) => setStats(s => ({ ...s, events: evts.count || 0, users: users.count || 0 })))
+      supabase.from('profiles').select('id, role', { count: 'exact' }),
+    ]).then(([evts, users]) => {
+      const allUsers = users.data || []
+      setStats(s => ({
+        ...s,
+        events: evts.count || 0,
+        users: users.count || 0,
+        admins: allUsers.filter(u => u.role === 'admin').length,
+        organizers: allUsers.filter(u => u.role === 'organizer').length,
+        volunteers: allUsers.filter(u => u.role === 'volunteer').length,
+      }))
+    })
   }, [])
 
   useEffect(() => {
@@ -277,23 +391,31 @@ export default function AppLayout({ session, onLogout }) {
       Promise.all([
         supabase.from('positions').select('id', { count: 'exact' }).eq('event_id', activeEventId),
         supabase.from('event_volunteers').select('id', { count: 'exact' }).eq('event_id', activeEventId),
-      ]).then(([postes, bens]) => setStats(s => ({ ...s, postes: postes.count || 0, benevoles: bens.count || 0 })))
+        supabase.from('assignments').select('id', { count: 'exact' }).eq('event_id', activeEventId),
+      ]).then(([postes, bens, asgn]) => setStats(s => ({ ...s, postes: postes.count || 0, benevoles: bens.count || 0, affectations: asgn.count || 0 })))
     }
   }, [activeEventId])
 
-  // Fermer le menu quand on change de page sur mobile
-  function handleSetPage(p) { setPage(p); setMenuOpen(false) }
+  useEffect(() => {
+    if (profile?.id && profile?.role === 'volunteer') {
+      supabase.from('assignments').select('id', { count: 'exact' }).eq('volunteer_id', profile.id)
+        .then(({ count }) => setStats(s => ({ ...s, missions: count || 0 })))
+    }
+  }, [profile])
 
   const role = profile?.role || 'volunteer'
 
+  function handleSetPage(p) { setPage(p); setMenuOpen(false) }
+
   function renderPage() {
     if (page === 'dashboard') {
-      if (role === 'admin') return <DashboardAdmin setPage={handleSetPage} stats={stats} />
-      if (role === 'organizer') return <DashboardOrganizer profile={profile} setPage={handleSetPage} />
-      return <DashboardVolunteer profile={profile} />
+      if (role === 'admin') return <DashboardAdmin setPage={handleSetPage} stats={stats} activeEventName={activeEventName} />
+      if (role === 'organizer') return <DashboardOrganizer profile={profile} setPage={handleSetPage} stats={stats} activeEventName={activeEventName} />
+      return <DashboardVolunteer profile={profile} stats={stats} activeEventName={activeEventName} setPage={handleSetPage} />
     }
     if (page === 'admin') return <PageAdmin setPage={handleSetPage} />
-    if (page === 'events') return <PageEvents profile={profile} onSetActiveEvent={(id, name) => { setActiveEventId(id); setActiveEventName(name) }} />
+    if (page === 'events' && selectedEventId) return <PageEventDetail eventId={selectedEventId} profile={profile} onBack={() => setSelectedEventId(null)} onSetActiveEvent={(id, name) => { setActiveEventId(id); setActiveEventName(name); setSelectedEventId(null) }} />
+    if (page === 'events') return <PageEvents profile={profile} onSetActiveEvent={(id, name) => { setActiveEventId(id); setActiveEventName(name) }} onViewDetail={(id) => setSelectedEventId(id)} />
     if (page === 'users') return <PageUsers profile={profile} activeEventId={activeEventId} />
     if (page === 'benevoles') return <PageBenevoles profile={profile} activeEventId={activeEventId} activeEventName={activeEventName} />
     if (page === 'postes') return <PagePostes profile={profile} activeEventId={activeEventId} activeEventName={activeEventName} />

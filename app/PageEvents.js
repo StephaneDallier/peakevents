@@ -49,7 +49,7 @@ function StatusBadge({ status }) {
   return <span style={{ background: s.bg, color: s.color, borderRadius: 20, padding: '3px 10px', fontSize: 12, fontWeight: 600 }}>{s.label}</span>
 }
 
-export default function PageEvents({ profile, onSetActiveEvent }) {
+export default function PageEvents({ profile, onSetActiveEvent, onViewDetail }) {
   const [events, setEvents] = useState([])
   const [filtered, setFiltered] = useState([])
   const [filter, setFilter] = useState('all')
@@ -199,11 +199,17 @@ export default function PageEvents({ profile, onSetActiveEvent }) {
                 return (
                   <tr key={ev.id} style={{ borderBottom: i < filtered.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
                     <td style={{ padding: '14px 16px' }}>
-                      <span onClick={() => onSetActiveEvent && onSetActiveEvent(ev.id, ev.name)}
-                        style={{ fontWeight: 700, color: '#1C3829', cursor: 'pointer' }}
-                        title="Definir comme evenement actif">
-                        {ev.name}
-                      </span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <span onClick={() => onViewDetail && onViewDetail(ev.id)}
+                          style={{ fontWeight: 700, color: '#1C3829', cursor: 'pointer' }}
+                          title="Voir le detail">
+                          {ev.name}
+                        </span>
+                        <span onClick={() => onSetActiveEvent && onSetActiveEvent(ev.id, ev.name)}
+                          style={{ fontSize: 11, color: '#F97316', cursor: 'pointer', fontWeight: 600 }}>
+                          Definir comme actif
+                        </span>
+                      </div>
                     </td>
                     <td style={{ padding: '14px 16px', fontSize: 13, color: '#6b7280', whiteSpace: 'nowrap' }}>{formatDate(ev.start_date)}</td>
                     <td style={{ padding: '14px 16px', fontSize: 13, color: '#374151' }}>{ev.location || '-'}</td>

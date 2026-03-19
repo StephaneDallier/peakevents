@@ -3,19 +3,18 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
-const COLORS = ['#1C3829', '#F97316', '#2563EB', '#7C3AED', '#DC2626', '#0891B2', '#2D5A3D', '#CA8A04']
 const START_H = 5
-const END_H = 22
+const END_H = 18
 const HOURS = Array.from({ length: END_H - START_H + 1 }, (_, i) => START_H + i)
 const TOTAL_MIN = HOURS.length * 60
+const COLORS_COMPLET = ['#1C3829', '#2D5A3D', '#0891b2', '#1d4ed8', '#7c3aed']
+const COLORS_INCOMPLET = ['#F97316', '#ea580c', '#f59e0b', '#dc2626', '#db2777']
 
 export default function PagePlanning({ profile, activeEventId, activeEventName }) {
   const [postes, setPostes] = useState([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (activeEventId) loadPlanning()
-  }, [activeEventId])
+  useEffect(() => { if (activeEventId) loadPlanning() }, [activeEventId])
 
   async function loadPlanning() {
     setLoading(true)
@@ -34,7 +33,6 @@ export default function PagePlanning({ profile, activeEventId, activeEventName }
       <div style={{ background: '#fff', borderRadius: 12, border: '2px dashed #e5e7eb', padding: 48, textAlign: 'center', marginTop: 20 }}>
         <div style={{ fontSize: 36, marginBottom: 8 }}>📅</div>
         <div style={{ fontWeight: 600, color: '#374151' }}>Aucun événement actif</div>
-        <div style={{ fontSize: 13, color: '#9ca3af', marginTop: 4 }}>Sélectionnez un événement dans la page Événements.</div>
       </div>
     </div>
   )
@@ -42,12 +40,10 @@ export default function PagePlanning({ profile, activeEventId, activeEventName }
   const postesAvecCreneaux = postes.filter(p => p.shifts?.some(sh => sh.start_time && sh.end_time))
 
   return (
-    <div>
+    <div style={{ fontFamily: 'Inter, sans-serif' }}>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>Planning</h1>
-        <p style={{ fontSize: 14, color: '#6b7280' }}>
-          Vue globale des créneaux &mdash; <strong style={{ color: '#1C3829' }}>{activeEventName || 'événement actif'}</strong>
-        </p>
+        <p style={{ fontSize: 14, color: '#6b7280' }}>Vue globale du planning de l'événement.</p>
       </div>
 
       {loading ? (
@@ -59,42 +55,49 @@ export default function PagePlanning({ profile, activeEventId, activeEventName }
           <div style={{ fontSize: 13, color: '#9ca3af' }}>Définissez des horaires sur vos postes pour voir le planning.</div>
         </div>
       ) : (
-        <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+        <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
           {/* En-tête heures */}
-          <div style={{ display: 'flex', borderBottom: '2px solid #e5e7eb', background: '#f9fafb' }}>
-            <div style={{ width: 180, flexShrink: 0, padding: '10px 16px', fontSize: 12, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Poste</div>
-            <div style={{ flex: 1, display: 'flex', position: 'relative' }}>
+          <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb' }}>
+            <div style={{ width: 200, flexShrink: 0, padding: '12px 20px', fontSize: 13, fontWeight: 600, color: '#374151' }}>Poste</div>
+            <div style={{ flex: 1, display: 'flex' }}>
               {HOURS.map(h => (
-                <div key={h} style={{ flex: 1, textAlign: 'center', padding: '10px 0', fontSize: 11, fontWeight: 600, color: '#9ca3af', borderLeft: '1px solid #f3f4f6' }}>
+                <div key={h} style={{ flex: 1, textAlign: 'center', padding: '12px 0', fontSize: 12, fontWeight: 500, color: '#9ca3af', borderLeft: '1px solid #f3f4f6' }}>
                   {h}h
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Lignes postes */}
+          {/* Lignes */}
           {postesAvecCreneaux.map((p, pi) => {
             const req = p.volunteers_required || 0
             const aff = p.shifts?.reduce((s, sh) => s + (sh.assignments?.length || 0), 0) || 0
-            const ok = req > 0 && aff >= req
-            const color = COLORS[pi % COLORS.length]
+            const complet = req > 0 && aff >= req
+            const color = complet
+              ? COLORS_COMPLET[pi % COLORS_COMPLET.length]
+              : COLORS_INCOMPLET[pi % COLORS_INCOMPLET.length]
 
             return (
-              <div key={p.id} style={{ display: 'flex', borderBottom: '1px solid #f3f4f6', minHeight: 56 }}>
+              <div key={p.id} style={{ display: 'flex', borderBottom: '1px solid #f3f4f6', minHeight: 70 }}>
                 {/* Info poste */}
-                <div style={{ width: 180, flexShrink: 0, padding: '10px 16px', borderRight: '1px solid #f3f4f6' }}>
-                  <div style={{ fontWeight: 600, fontSize: 13, color: '#111', marginBottom: 2 }}>{p.name}</div>
-                  {p.location && <div style={{ fontSize: 11, color: '#9ca3af' }}>📍 {p.location}</div>}
-                  <span style={{ display: 'inline-block', marginTop: 4, background: ok ? '#dcfce7' : '#fef9c3', color: ok ? '#16a34a' : '#ca8a04', borderRadius: 20, padding: '1px 8px', fontSize: 10, fontWeight: 700 }}>
+                <div style={{ width: 200, flexShrink: 0, padding: '14px 20px', borderRight: '1px solid #f3f4f6' }}>
+                  <div style={{ fontWeight: 600, fontSize: 13, color: '#111', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
+                  {p.location && <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.location}</div>}
+                  <span style={{
+                    display: 'inline-block',
+                    background: complet ? '#dcfce7' : '#fff7ed',
+                    color: complet ? '#16a34a' : '#ea580c',
+                    borderRadius: 20, padding: '2px 8px', fontSize: 11, fontWeight: 700
+                  }}>
                     {aff}/{req}
                   </span>
                 </div>
 
                 {/* Timeline */}
-                <div style={{ flex: 1, position: 'relative' }}>
+                <div style={{ flex: 1, position: 'relative', padding: '8px 0' }}>
                   {/* Colonnes heures */}
                   {HOURS.map((h, i) => (
-                    <div key={h} style={{ position: 'absolute', top: 0, bottom: 0, left: `${(i / HOURS.length) * 100}%`, width: `${(1 / HOURS.length) * 100}%`, borderLeft: '1px solid #f3f4f6' }} />
+                    <div key={h} style={{ position: 'absolute', top: 0, bottom: 0, left: `${(i / HOURS.length) * 100}%`, borderLeft: '1px solid #f9fafb', pointerEvents: 'none' }} />
                   ))}
 
                   {/* Blocs créneaux */}
@@ -107,22 +110,23 @@ export default function PagePlanning({ profile, activeEventId, activeEventName }
                     const width = Math.max(1, ((em - sm) / TOTAL_MIN) * 100)
                     const names = (sh.assignments || [])
                       .map(a => `${a.profiles?.first_name || ''} ${a.profiles?.last_name || ''}`.trim())
-                      .filter(Boolean).join(', ')
+                      .filter(Boolean)
 
                     return (
                       <div key={sh.id} style={{
                         position: 'absolute', top: 8, bottom: 8,
                         left: `${left}%`, width: `${width}%`,
-                        background: color, borderRadius: 6,
-                        padding: '4px 8px', overflow: 'hidden',
+                        background: color, borderRadius: 8,
+                        padding: '6px 10px', overflow: 'hidden',
                         display: 'flex', flexDirection: 'column', justifyContent: 'center',
+                        cursor: 'default',
                       }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#fff', marginBottom: names.length > 0 ? 2 : 0 }}>
                           {sh.start_time.slice(0, 5)}-{sh.end_time.slice(0, 5)}
                         </div>
-                        {names && (
-                          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.8)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {names}
+                        {names.length > 0 && (
+                          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.85)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {names.join(', ')}
                           </div>
                         )}
                       </div>
@@ -132,18 +136,6 @@ export default function PagePlanning({ profile, activeEventId, activeEventName }
               </div>
             )
           })}
-        </div>
-      )}
-
-      {/* Légende */}
-      {postesAvecCreneaux.length > 0 && (
-        <div style={{ marginTop: 16, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-          {postesAvecCreneaux.map((p, pi) => (
-            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#374151' }}>
-              <div style={{ width: 12, height: 12, borderRadius: 3, background: COLORS[pi % COLORS.length], flexShrink: 0 }} />
-              {p.name}
-            </div>
-          ))}
         </div>
       )}
     </div>
