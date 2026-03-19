@@ -30,6 +30,7 @@ const inputStyle = { width: '100%', padding: '10px 13px', border: '1.5px solid #
 const btnPrimary = { background: '#1C3829', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 18px', fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }
 const btnSecondary = { background: '#fff', color: '#374151', border: '1.5px solid #e5e7eb', borderRadius: 8, padding: '7px 13px', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }
 const btnDanger = { background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: 8, padding: '7px 13px', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }
+const btnBlue = { background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 8, padding: '7px 11px', fontWeight: 600, fontSize: 12, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }
 const emptyForm = { name: '', start_date: '', end_date: '', location: '', description: '', status: 'draft' }
 
 function formatDate(d) {
@@ -40,15 +41,15 @@ function formatDate(d) {
 function StatusBadge({ status }) {
   const map = {
     draft: { bg: '#f3f4f6', color: '#6b7280', label: 'Brouillon' },
-    published: { bg: '#dcfce7', color: '#16a34a', label: 'Publié' },
-    completed: { bg: '#dbeafe', color: '#2563eb', label: 'Terminé' },
+    published: { bg: '#dcfce7', color: '#16a34a', label: 'Publie' },
+    completed: { bg: '#dbeafe', color: '#2563eb', label: 'Termine' },
     archived: { bg: '#fef3c7', color: '#d97706', label: 'Archive' },
   }
   const s = map[status] || map.draft
   return <span style={{ background: s.bg, color: s.color, borderRadius: 20, padding: '3px 10px', fontSize: 12, fontWeight: 600 }}>{s.label}</span>
 }
 
-export default function PageEvents({ profile, onSetActivéEvent }) {
+export default function PageEvents({ profile, onSetActiveEvent }) {
   const [events, setEvents] = useState([])
   const [filtered, setFiltered] = useState([])
   const [filter, setFilter] = useState('all')
@@ -59,6 +60,10 @@ export default function PageEvents({ profile, onSetActivéEvent }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [deleteId, setDeleteId] = useState(null)
+  const [orgModal, setOrgModal] = useState(null)
+  const [organizers, setOrganizers] = useState([])
+  const [selectedOrg, setSelectedOrg] = useState('')
+  const [orgAssigned, setOrgAssigned] = useState([])
 
   const isAdmin = profile?.role === 'admin'
 
@@ -86,12 +91,14 @@ export default function PageEvents({ profile, onSetActivéEvent }) {
   function openEdit(ev) {
     setEditEvent(ev)
     setForm({ name: ev.name || '', start_date: ev.start_date || '', end_date: ev.end_date || '', location: ev.location || '', description: ev.description || '', status: ev.status || 'draft' })
-    setError(''); setShowModal(true)
+    setError('')
+    setShowModal(true)
   }
 
   async function handleSave() {
-    if (!form.name || !form.start_date) { setError('Nom et date de début sont obligatoires'); return }
-    setSaving(true); setError('')
+    if (!form.name || !form.start_date) { setError('Nom et date de debut sont obligatoires'); return }
+    setSaving(true)
+    setError('')
     const { data: { user } } = await supabase.auth.getUser()
     const payload = { name: form.name, start_date: form.start_date, end_date: form.end_date || null, location: form.location, description: form.description, status: form.status, created_by: user?.id }
     let err
@@ -103,12 +110,37 @@ export default function PageEvents({ profile, onSetActivéEvent }) {
     }
     setSaving(false)
     if (err) { setError('Erreur : ' + err.message); return }
-    setShowModal(false); loadEvents()
+    setShowModal(false)
+    loadEvents()
   }
 
   async function handleDelete(id) {
     await supabase.from('events').delete().eq('id', id)
-    setDeleteId(null); loadEvents()
+    setDeleteId(null)
+    loadEvents()
+  }
+
+  async function openOrgModal(ev) {
+    setSelectedOrg('')
+    setOrgModal(ev)
+    const { data: orgs } = await supabase.from('profiles').select('id, first_name, last_name').eq('role', 'organizer').order('last_name')
+    setOrganizers(orgs || [])
+    const { data: assigned } = await supabase.from('event_organizers').select('user_id, profiles(first_name, last_name)').eq('event_id', ev.id)
+    setOrgAssigned(assigned || [])
+  }
+
+  async function handleAssignOrg() {
+    if (!selectedOrg || !orgModal) return
+    await supabase.from('event_organizers').upsert({ event_id: orgModal.id, user_id: selectedOrg }, { onConflict: 'event_id,user_id' })
+    const { data: assigned } = await supabase.from('event_organizers').select('user_id, profiles(first_name, last_name)').eq('event_id', orgModal.id)
+    setOrgAssigned(assigned || [])
+    setSelectedOrg('')
+  }
+
+  async function handleRemoveOrg(userId) {
+    await supabase.from('event_organizers').delete().eq('event_id', orgModal.id).eq('user_id', userId)
+    const { data: assigned } = await supabase.from('event_organizers').select('user_id, profiles(first_name, last_name)').eq('event_id', orgModal.id)
+    setOrgAssigned(assigned || [])
   }
 
   function getRemplissage(ev) {
@@ -119,16 +151,16 @@ export default function PageEvents({ profile, onSetActivéEvent }) {
     return { pct, color }
   }
 
-  const filters = [{ key: 'all', label: 'Tous' }, { key: 'draft', label: 'Brouillon' }, { key: 'published', label: 'Publié' }, { key: 'completed', label: 'Terminé' }]
+  const filters = [{ key: 'all', label: 'Tous' }, { key: 'draft', label: 'Brouillon' }, { key: 'published', label: 'Publie' }, { key: 'completed', label: 'Termine' }]
 
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>Événements</h1>
-          <p style={{ fontSize: 14, color: '#6b7280' }}>Tous les événements de la plateforme.</p>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>Evenements</h1>
+          <p style={{ fontSize: 14, color: '#6b7280' }}>Tous les evenements de la plateforme.</p>
         </div>
-        {isAdmin && <button onClick={openCreate} style={btnPrimary}>+ Nouvel événement</button>}
+        {isAdmin && <button onClick={openCreate} style={btnPrimary}>+ Nouvel evenement</button>}
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
@@ -157,9 +189,9 @@ export default function PageEvents({ profile, onSetActivéEvent }) {
                 <tr><td colSpan={6}>
                   <div style={{ padding: 48, textAlign: 'center' }}>
                     <div style={{ fontSize: 36, marginBottom: 8 }}>📅</div>
-                    <div style={{ fontWeight: 600, color: '#374151', marginBottom: 4 }}>Aucun événement</div>
-                    <div style={{ fontSize: 13, color: '#9ca3af', marginBottom: 16 }}>Crééz votre premier événement pour commencer.</div>
-                    {isAdmin && <button onClick={openCreate} style={btnPrimary}>+ Créer un événement</button>}
+                    <div style={{ fontWeight: 600, color: '#374151', marginBottom: 4 }}>Aucun evenement</div>
+                    <div style={{ fontSize: 13, color: '#9ca3af', marginBottom: 16 }}>Creez votre premier evenement pour commencer.</div>
+                    {isAdmin && <button onClick={openCreate} style={btnPrimary}>+ Creer un evenement</button>}
                   </div>
                 </td></tr>
               ) : filtered.map((ev, i) => {
@@ -167,9 +199,9 @@ export default function PageEvents({ profile, onSetActivéEvent }) {
                 return (
                   <tr key={ev.id} style={{ borderBottom: i < filtered.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
                     <td style={{ padding: '14px 16px' }}>
-                      <span onClick={() => onSetActivéEvent && onSetActivéEvent(ev.id, ev.name)}
+                      <span onClick={() => onSetActiveEvent && onSetActiveEvent(ev.id, ev.name)}
                         style={{ fontWeight: 700, color: '#1C3829', cursor: 'pointer' }}
-                        title="Definir comme événement actif">
+                        title="Definir comme evenement actif">
                         {ev.name}
                       </span>
                     </td>
@@ -188,6 +220,7 @@ export default function PageEvents({ profile, onSetActivéEvent }) {
                       {isAdmin && (
                         <div style={{ display: 'flex', gap: 6 }}>
                           <button onClick={() => openEdit(ev)} style={btnSecondary}>Modifier</button>
+                          <button onClick={() => openOrgModal(ev)} style={btnBlue}>Organisateurs</button>
                           <button onClick={() => setDeleteId(ev.id)} style={btnDanger}>Suppr.</button>
                         </div>
                       )}
@@ -201,13 +234,13 @@ export default function PageEvents({ profile, onSetActivéEvent }) {
       </div>
 
       {showModal && (
-        <Modal title={editEvent ? "Modifier l'événement" : 'Nouvel événement'} onClose={() => setShowModal(false)}>
+        <Modal title={editEvent ? "Modifier l'evenement" : 'Nouvel evenement'} onClose={() => setShowModal(false)}>
           {error && <div style={{ background: '#fef2f2', color: '#dc2626', borderRadius: 8, padding: '10px 13px', fontSize: 13, marginBottom: 16 }}>{error}</div>}
-          <Field label="Nom de l'événement *">
+          <Field label="Nom de l'evenement *">
             <input style={inputStyle} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Ex: SwimRun du Verdon" />
           </Field>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <Field label="Date de début *">
+            <Field label="Date de debut *">
               <input style={inputStyle} type="date" value={form.start_date} onChange={e => setForm({ ...form, start_date: e.target.value })} />
             </Field>
             <Field label="Date de fin">
@@ -220,25 +253,67 @@ export default function PageEvents({ profile, onSetActivéEvent }) {
           <Field label="Statut">
             <select style={inputStyle} value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
               <option value="draft">Brouillon</option>
-              <option value="published">Publié</option>
-              <option value="completed">Terminé</option>
+              <option value="published">Publie</option>
+              <option value="completed">Termine</option>
             </select>
           </Field>
           <Field label="Description">
-            <textarea style={{ ...inputStyle, height: 80, resize: 'vertical' }} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Description de l'événement..." />
+            <textarea style={{ ...inputStyle, height: 80, resize: 'vertical' }} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Description..." />
           </Field>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
             <button onClick={() => setShowModal(false)} style={btnSecondary}>Annuler</button>
             <button onClick={handleSave} disabled={saving} style={{ ...btnPrimary, opacity: saving ? 0.6 : 1 }}>
-              {saving ? 'Enregistrement...' : editEvent ? 'Enregistrer' : 'Créer'}
+              {saving ? 'Enregistrement...' : editEvent ? 'Enregistrer' : 'Creer'}
             </button>
           </div>
         </Modal>
       )}
 
+      {orgModal && (
+        <Modal title={`Organisateurs — ${orgModal.name}`} onClose={() => setOrgModal(null)}>
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.4px' }}>Organisateurs assignes</div>
+            {orgAssigned.length === 0 ? (
+              <div style={{ fontSize: 13, color: '#9ca3af', fontStyle: 'italic', marginBottom: 12 }}>Aucun organisateur assigne</div>
+            ) : (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                {orgAssigned.map(a => (
+                  <div key={a.user_id} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#eff6ff', borderRadius: 20, padding: '4px 10px' }}>
+                    <span style={{ fontSize: 13, color: '#2563eb', fontWeight: 600 }}>{a.profiles?.first_name} {a.profiles?.last_name}</span>
+                    <button onClick={() => handleRemoveOrg(a.user_id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#93c5fd', fontSize: 16, lineHeight: 1, padding: 0 }}>&times;</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.4px' }}>Ajouter un organisateur</div>
+            {organizers.length === 0 ? (
+              <div style={{ fontSize: 13, color: '#9ca3af' }}>Aucun utilisateur avec le role organisateur.</div>
+            ) : (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <select value={selectedOrg} onChange={e => setSelectedOrg(e.target.value)}
+                  style={{ flex: 1, padding: '10px 13px', border: '1.5px solid #e5e7eb', borderRadius: 8, fontSize: 14, fontFamily: 'Inter, sans-serif', outline: 'none', color: '#111', background: '#fff' }}>
+                  <option value="">- Choisir -</option>
+                  {organizers.filter(o => !orgAssigned.find(a => a.user_id === o.id)).map(o => (
+                    <option key={o.id} value={o.id}>{o.first_name} {o.last_name}</option>
+                  ))}
+                </select>
+                <button onClick={handleAssignOrg} disabled={!selectedOrg} style={{ ...btnPrimary, opacity: !selectedOrg ? 0.6 : 1 }}>
+                  Assigner
+                </button>
+              </div>
+            )}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button onClick={() => setOrgModal(null)} style={btnSecondary}>Fermer</button>
+          </div>
+        </Modal>
+      )}
+
       {deleteId && (
-        <Modal title="Supprimer l'événement" onClose={() => setDeleteId(null)}>
-          <p style={{ fontSize: 14, color: '#374151', marginBottom: 24 }}>Êtes-vous sûr de vouloir supprimer cet événement ? Cette action est irréversible.</p>
+        <Modal title="Supprimer l'evenement" onClose={() => setDeleteId(null)}>
+          <p style={{ fontSize: 14, color: '#374151', marginBottom: 24 }}>Etes-vous sur de vouloir supprimer cet evenement ? Cette action est irreversible.</p>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
             <button onClick={() => setDeleteId(null)} style={btnSecondary}>Annuler</button>
             <button onClick={() => handleDelete(deleteId)} style={{ ...btnPrimary, background: '#dc2626' }}>Supprimer</button>
