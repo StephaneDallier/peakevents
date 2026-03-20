@@ -11,6 +11,7 @@ import PageAffectations from './PageAffectations'
 import PagePlanning from './PagePlanning'
 import PageMissions from './PageMissions'
 import PageCatalogue from './PageCatalogue'
+import PageProfil from './PageProfil'
 import PageProjet from './PageProjet'
 import PageEventDetail from './PageEventDetail'
 
@@ -455,6 +456,7 @@ export default function AppLayout({ session, onLogout }) {
     if (page === 'planning') return <PagePlanning profile={profile} activeEventId={activeEventId} activeEventName={activeEventName} />
     if (page === 'missions') return <PageMissions profile={profile} />
     if (page === 'catalogue') return <PageCatalogue profile={profile} />
+    if (page === 'profil') return <PageProfil profile={profile} onProfileUpdate={() => { supabase.from('profiles').select('*').eq('id', session?.user?.id).single().then(({ data }) => { if (data) setProfile(data) }) }} />
     if (page === 'projet') return <PageProjet profile={profile} activeEventId={activeEventId} activeEventName={activeEventName} />
     return null
   }
