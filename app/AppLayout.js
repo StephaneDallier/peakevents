@@ -10,6 +10,7 @@ import PagePostes from './PagePostes'
 import PageAffectations from './PageAffectations'
 import PagePlanning from './PagePlanning'
 import PageMissions from './PageMissions'
+import PageCatalogue from './PageCatalogue'
 import PageProjet from './PageProjet'
 import PageEventDetail from './PageEventDetail'
 
@@ -102,6 +103,7 @@ function SidebarContent({ page, setPage, profile, onLogout, activeEventName, onC
         {role === 'volunteer' && (<>
           <NavSection label="Mon espace" />
           <NavItem item={{ id: 'dashboard', label: 'Accueil', icon: Icons.dashboard }} active={page === 'dashboard'} onClick={() => nav('dashboard')} />
+          <NavItem item={{ id: 'catalogue', label: 'Les événements', icon: Icons.catalogue }} active={page === 'catalogue'} onClick={() => nav('catalogue')} />
           <NavItem item={{ id: 'missions', label: 'Mes missions', icon: Icons.missions }} active={page === 'missions'} onClick={() => nav('missions')} />
           <NavItem item={{ id: 'planning', label: 'Mon planning', icon: Icons.planning }} active={page === 'planning'} onClick={() => nav('planning')} />
         </>)}
@@ -452,6 +454,7 @@ export default function AppLayout({ session, onLogout }) {
     if (page === 'affectations') return <PageAffectations profile={profile} activeEventId={activeEventId} activeEventName={activeEventName} />
     if (page === 'planning') return <PagePlanning profile={profile} activeEventId={activeEventId} activeEventName={activeEventName} />
     if (page === 'missions') return <PageMissions profile={profile} />
+    if (page === 'catalogue') return <PageCatalogue profile={profile} />
     if (page === 'projet') return <PageProjet profile={profile} activeEventId={activeEventId} activeEventName={activeEventName} />
     return null
   }

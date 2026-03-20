@@ -53,6 +53,7 @@ export default function PageBenevoles({ profile, activeEventId, activeEventName 
   const [adding, setAdding] = useState(false)
   const [removeId, setRemoveId] = useState(null)
   const [toast, setToast] = useState('')
+  const [pending, setPending] = useState([])
   const [allEvents, setAllEvents] = useState([])
   const [currentEventId, setCurrentEventId] = useState(activeEventId)
   const [currentEventName, setCurrentEventName] = useState(activeEventName)
@@ -82,9 +83,10 @@ export default function PageBenevoles({ profile, activeEventId, activeEventName 
 
   async function loadBenevoles() {
     setLoading(true)
-    const [volRes, affRes] = await Promise.all([
-      supabase.from('event_volunteers').select('*, profiles(*)').eq('event_id', currentEventId),
+    const [volRes, affRes, pendRes] = await Promise.all([
+      supabase.from('event_volunteers').select('*, profiles(*)').eq('event_id', currentEventId).eq('status', 'accepted'),
       supabase.from('assignments').select('volunteer_id, shifts(positions(name))').eq('event_id', currentEventId),
+      supabase.from('event_volunteers').select('*, profiles(*)').eq('event_id', currentEventId).eq('status', 'pending'),
     ])
 
     const map = {}
@@ -96,8 +98,21 @@ export default function PageBenevoles({ profile, activeEventId, activeEventName 
     })
 
     setVolunteers(volRes.data || [])
+    setPending(pendRes.data || [])
     setAffMap(map)
     setLoading(false)
+  }
+
+  async function handleAccept(evVolId) {
+    await supabase.from('event_volunteers').update({ status: 'accepted' }).eq('id', evVolId)
+    loadBenevoles()
+    showToast('Bénévole accepté')
+  }
+
+  async function handleReject(evVolId) {
+    await supabase.from('event_volunteers').delete().eq('id', evVolId)
+    loadBenevoles()
+    showToast('Demande refusée')
   }
 
   async function openAddModal() {
@@ -178,6 +193,42 @@ export default function PageBenevoles({ profile, activeEventId, activeEventName 
           <button onClick={openAddModal} style={btnPrimary}>+ Ajouter un bénévole</button>
         )}
       </div>
+
+      {/* Demandes en attente */}
+      {canManage && pending.length > 0 && (
+        <div style={{ background: '#fff', borderRadius: 12, border: '2px solid #F97316', overflow: 'hidden', marginBottom: 16 }}>
+          <div style={{ padding: '12px 20px', background: '#fff7ed', borderBottom: '1px solid #fed7aa', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 16 }}>⏳</span>
+            <span style={{ fontWeight: 700, fontSize: 14, color: '#ea580c' }}>Demandes en attente</span>
+            <span style={{ background: '#F97316', color: '#fff', borderRadius: 20, padding: '1px 8px', fontSize: 12, fontWeight: 700 }}>{pending.length}</span>
+          </div>
+          <div style={{ padding: '12px 20px' }}>
+            {pending.map(pv => (
+              <div key={pv.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f9fafb' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: '#111' }}>{pv.profiles?.first_name} {pv.profiles?.last_name}</div>
+                    <div style={{ fontSize: 12, color: '#9ca3af' }}>{pv.profiles?.email}</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => handleAccept(pv.id)}
+                    style={{ background: '#dcfce7', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 8, padding: '6px 14px', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+                    ✓ Accepter
+                  </button>
+                  <button onClick={() => handleReject(pv.id)}
+                    style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: 8, padding: '6px 14px', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+                    ✕ Refuser
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
