@@ -34,7 +34,7 @@ function NavSection({ label }) {
   return <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 8px 4px' }}>{label}</div>
 }
 
-function NavItem({ item, active, onClick }) {
+function NavItem({ item, active, onClick, badge }) {
   return (
     <button onClick={onClick} style={{
       display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '9px 10px',
@@ -45,12 +45,18 @@ function NavItem({ item, active, onClick }) {
       fontWeight: active ? 600 : 400,
       transition: 'all 0.15s', marginBottom: 2,
     }}>
-      {item.icon}{item.label}
+      {item.icon}
+      <span style={{ flex: 1 }}>{item.label}</span>
+      {badge > 0 && (
+        <span style={{ background: '#dc2626', color: '#fff', borderRadius: 20, padding: '1px 7px', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
+          {badge}
+        </span>
+      )}
     </button>
   )
 }
 
-function SidebarContent({ page, setPage, profile, onLogout, activeEventName, onClose }) {
+function SidebarContent({ page, setPage, profile, onLogout, activeEventName, onClose, badges = {} }) {
   const role = profile?.role || 'volunteer'
   const initials = ((profile?.first_name?.[0] || '') + (profile?.last_name?.[0] || '')).toUpperCase() || '?'
   const fullName = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || 'Utilisateur'
@@ -94,11 +100,11 @@ function SidebarContent({ page, setPage, profile, onLogout, activeEventName, onC
           <NavItem item={{ id: 'events', label: 'Événements', icon: Icons.events }} active={page === 'events'} onClick={() => nav('events')} />
           <NavSection label="Événement actif" />
           <NavItem item={{ id: 'postes', label: 'Postes', icon: Icons.postes }} active={page === 'postes'} onClick={() => nav('postes')} />
-          <NavItem item={{ id: 'benevoles', label: 'Bénévoles', icon: Icons.benevoles }} active={page === 'benevoles'} onClick={() => nav('benevoles')} />
+          <NavItem item={{ id: 'benevoles', label: 'Bénévoles', icon: Icons.benevoles }} active={page === 'benevoles'} onClick={() => nav('benevoles')} badge={badges.benevoles} />
           <NavItem item={{ id: 'affectations', label: 'Affectations', icon: Icons.affectations }} active={page === 'affectations'} onClick={() => nav('affectations')} />
           <NavItem item={{ id: 'planning', label: 'Planning', icon: Icons.planning }} active={page === 'planning'} onClick={() => nav('planning')} />
           <NavItem item={{ id: 'projet', label: 'Projet', icon: Icons.projet }} active={page === 'projet'} onClick={() => nav('projet')} />
-          <NavItem item={{ id: 'missions', label: 'Suivi missions', icon: Icons.missions }} active={page === 'missions'} onClick={() => nav('missions')} />
+          <NavItem item={{ id: 'missions', label: 'Suivi missions', icon: Icons.missions }} active={page === 'missions'} onClick={() => nav('missions')} badge={badges.missionRequests} />
           <NavSection label="Équipe" />
           <NavItem item={{ id: 'users', label: 'Mes bénévoles', icon: Icons.users }} active={page === 'users'} onClick={() => nav('users')} />
         </>)}
@@ -434,6 +440,22 @@ export default function AppLayout({ session, onLogout }) {
 
   const role = profile?.role || 'volunteer'
 
+  const [badges, setBadges] = useState({ benevoles: 0, missionRequests: 0 })
+
+  useEffect(() => {
+    if (!activeEventId) return
+    loadBadges()
+  }, [activeEventId, page]) // Recharger quand on change de page
+
+  async function loadBadges() {
+    if (!activeEventId) return
+    const [inscRes, reqRes] = await Promise.all([
+      supabase.from('event_volunteers').select('id', { count: 'exact' }).eq('event_id', activeEventId).eq('status', 'pending'),
+      supabase.from('mission_requests').select('id', { count: 'exact' }).eq('event_id', activeEventId).eq('status', 'pending'),
+    ])
+    setBadges({ benevoles: inscRes.count || 0, missionRequests: reqRes.count || 0 })
+  }
+
   function handleSetPage(p) {
     setPage(p)
     setMenuOpen(false)
@@ -468,7 +490,7 @@ export default function AppLayout({ session, onLogout }) {
       {/* SIDEBAR DESKTOP */}
       {!isMobile && (
         <div style={{ width: 260, flexShrink: 0, height: '100vh', position: 'sticky', top: 0 }}>
-          <SidebarContent page={page} setPage={handleSetPage} profile={profile} onLogout={onLogout} activeEventName={activeEventName} />
+          <SidebarContent page={page} setPage={handleSetPage} profile={profile} onLogout={onLogout} activeEventName={activeEventName} badges={badges} />
         </div>
       )}
 
@@ -477,7 +499,7 @@ export default function AppLayout({ session, onLogout }) {
         <div style={{ position: 'fixed', inset: 0, zIndex: 100 }}>
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={() => setMenuOpen(false)} />
           <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 280 }}>
-            <SidebarContent page={page} setPage={handleSetPage} profile={profile} onLogout={onLogout} activeEventName={activeEventName} onClose={() => setMenuOpen(false)} />
+            <SidebarContent page={page} setPage={handleSetPage} profile={profile} onLogout={onLogout} activeEventName={activeEventName} onClose={() => setMenuOpen(false)} badges={badges} />
           </div>
         </div>
       )}
