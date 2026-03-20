@@ -23,7 +23,33 @@ const btnSecondary = { background: '#fff', color: '#374151', border: '1.5px soli
 const btnSuccess = { background: '#f0fdf4', color: '#16a34a', border: '1px solid #86efac', borderRadius: 8, padding: '6px 12px', fontWeight: 600, fontSize: 12, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }
 const btnDanger = { background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: 8, padding: '4px 8px', fontWeight: 600, fontSize: 11, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }
 
+
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    function check() { setIsMobile(window.innerWidth < 768) }
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+  return isMobile
+}
+
 export default function PageAffectations({ profile, activeEventId, activeEventName }) {
+  const [allEvents, setAllEvents] = useState([])
+  const [currentEventId, setCurrentEventId] = useState(activeEventId)
+  const [currentEventName, setCurrentEventName] = useState(activeEventName)
+
+  useEffect(() => {
+    setCurrentEventId(activeEventId)
+    setCurrentEventName(activeEventName)
+  }, [activeEventId, activeEventName])
+
+  useEffect(() => {
+    supabase.from('events').select('id, name').neq('status', 'archived').order('start_date')
+      .then(({ data }) => setAllEvents(data || []))
+  }, [])
+
   const [postes, setPostes] = useState([])
   const [loading, setLoading] = useState(true)
   const [affectModal, setAffectModal] = useState(null) // { shiftId, posteName }
@@ -33,11 +59,12 @@ export default function PageAffectations({ profile, activeEventId, activeEventNa
   const [affecting, setAffecting] = useState(false)
   const [toast, setToast] = useState('')
 
+  const isMobile = useIsMobile()
   const canManage = profile?.role === 'admin' || profile?.role === 'organizer'
 
   useEffect(() => {
-    if (activeEventId) loadPostes()
-  }, [activeEventId])
+    if (currentEventId) loadPostes()
+  }, [currentEventId])
 
   function showToast(msg) {
     setToast(msg)
@@ -49,7 +76,7 @@ export default function PageAffectations({ profile, activeEventId, activeEventNa
     const { data } = await supabase
       .from('positions')
       .select('*, shifts(*, assignments(id, volunteer_id, profiles(first_name, last_name)))')
-      .eq('event_id', activeEventId)
+      .eq('event_id', currentEventId)
       .order('name')
     setPostes(data || [])
     setLoading(false)
@@ -62,7 +89,7 @@ export default function PageAffectations({ profile, activeEventId, activeEventNa
     const { data: evVols } = await supabase
       .from('event_volunteers')
       .select('user_id, profiles(first_name, last_name)')
-      .eq('event_id', activeEventId)
+      .eq('event_id', currentEventId)
       .eq('status', 'accepted')
     const { data: existing } = await supabase
       .from('assignments')
@@ -80,7 +107,7 @@ export default function PageAffectations({ profile, activeEventId, activeEventNa
     const { error } = await supabase.from('assignments').insert({
       shift_id: affectModal.shiftId,
       volunteer_id: selectedVol,
-      event_id: activeEventId,
+      event_id: currentEventId,
     })
     setAffecting(false)
     if (error) { setAffectError(error.message); return }
@@ -95,9 +122,19 @@ export default function PageAffectations({ profile, activeEventId, activeEventNa
     showToast('Affectation retirée')
   }
 
-  if (!activeEventId) return (
+  if (!currentEventId) return (
     <div>
       <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>Affectations</h1>
+          {/* Sélecteur d'événement */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+            <span style={{ fontSize: 13, color: '#6b7280' }}>Événement :</span>
+            <select value={currentEventId || ''}
+              onChange={e => { const ev = allEvents.find(x => x.id === e.target.value); setCurrentEventId(e.target.value); setCurrentEventName(ev?.name || '') }}
+              style={{ padding: '6px 12px', borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 13, fontFamily: 'Inter, sans-serif', color: '#111', background: '#fff', cursor: 'pointer' }}>
+              <option value="">- Choisir -</option>
+              {allEvents.map(ev => <option key={ev.id} value={ev.id}>{ev.name}</option>)}
+            </select>
+          </div>
       <div style={{ background: '#fff', borderRadius: 12, border: '2px dashed #e5e7eb', padding: 48, textAlign: 'center', marginTop: 20 }}>
         <div style={{ fontSize: 36, marginBottom: 8 }}>✅</div>
         <div style={{ fontWeight: 600, color: '#374151', marginBottom: 4 }}>Aucun événement actif</div>
@@ -116,8 +153,18 @@ export default function PageAffectations({ profile, activeEventId, activeEventNa
 
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>Affectations</h1>
+          {/* Sélecteur d'événement */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+            <span style={{ fontSize: 13, color: '#6b7280' }}>Événement :</span>
+            <select value={currentEventId || ''}
+              onChange={e => { const ev = allEvents.find(x => x.id === e.target.value); setCurrentEventId(e.target.value); setCurrentEventName(ev?.name || '') }}
+              style={{ padding: '6px 12px', borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 13, fontFamily: 'Inter, sans-serif', color: '#111', background: '#fff', cursor: 'pointer' }}>
+              <option value="">- Choisir -</option>
+              {allEvents.map(ev => <option key={ev.id} value={ev.id}>{ev.name}</option>)}
+            </select>
+          </div>
         <p style={{ fontSize: 14, color: '#6b7280' }}>
-          Affectez les bénévoles aux postes &mdash; <strong style={{ color: '#1C3829' }}>{activeEventName || 'événement actif'}</strong>
+          Affectez les bénévoles aux postes &mdash; <strong style={{ color: '#1C3829' }}>{currentEventName || 'événement actif'}</strong>
         </p>
       </div>
 

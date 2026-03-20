@@ -89,7 +89,7 @@ function SidebarContent({ page, setPage, profile, onLogout, activeEventName, onC
         {role === 'organizer' && (<>
           <NavSection label="Mon espace" />
           <NavItem item={{ id: 'dashboard', label: 'Tableau de bord', icon: Icons.dashboard }} active={page === 'dashboard'} onClick={() => nav('dashboard')} />
-          <NavItem item={{ id: 'events', label: 'Mes événements', icon: Icons.events }} active={page === 'events'} onClick={() => nav('events')} />
+          <NavItem item={{ id: 'events', label: 'Événements', icon: Icons.events }} active={page === 'events'} onClick={() => nav('events')} />
           <NavSection label="Événement actif" />
           <NavItem item={{ id: 'postes', label: 'Postes', icon: Icons.postes }} active={page === 'postes'} onClick={() => nav('postes')} />
           <NavItem item={{ id: 'benevoles', label: 'Bénévoles', icon: Icons.benevoles }} active={page === 'benevoles'} onClick={() => nav('benevoles')} />
@@ -350,6 +350,13 @@ export default function AppLayout({ session, onLogout }) {
   const [page, setPage] = useState('dashboard')
   const [activeEventId, setActiveEventId] = useState(null)
   const [activeEventName, setActiveEventName] = useState(null)
+
+  function setActiveEvent(id, name) {
+    setActiveEventId(id)
+    setActiveEventName(name)
+    localStorage.setItem('peakevents_active_id', id)
+    localStorage.setItem('peakevents_active_name', name)
+  }
   const [stats, setStats] = useState({ events: 0, users: 0, postes: 0, benevoles: 0, affectations: 0, admins: 0, organizers: 0, volunteers: 0, missions: 0 })
   const [selectedEventId, setSelectedEventId] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -370,8 +377,24 @@ export default function AppLayout({ session, onLogout }) {
   }, [session])
 
   useEffect(() => {
-    supabase.from('events').select('id, name').neq('status', 'archived').order('start_date').limit(1)
-      .then(({ data }) => { if (data?.[0]) { setActiveEventId(data[0].id); setActiveEventName(data[0].name) } })
+    // Charger l'événement actif depuis localStorage d'abord
+    const savedId = localStorage.getItem('peakevents_active_id')
+    const savedName = localStorage.getItem('peakevents_active_name')
+    if (savedId && savedName) {
+      setActiveEventId(savedId)
+      setActiveEventName(savedName)
+    } else {
+      // Sinon prendre le premier événement non archivé
+      supabase.from('events').select('id, name').neq('status', 'archived').order('start_date').limit(1)
+        .then(({ data }) => {
+          if (data?.[0]) {
+            setActiveEventId(data[0].id)
+            setActiveEventName(data[0].name)
+            localStorage.setItem('peakevents_active_id', data[0].id)
+            localStorage.setItem('peakevents_active_name', data[0].name)
+          }
+        })
+    }
     Promise.all([
       supabase.from('events').select('id', { count: 'exact' }),
       supabase.from('profiles').select('id, role', { count: 'exact' }),
@@ -407,7 +430,12 @@ export default function AppLayout({ session, onLogout }) {
 
   const role = profile?.role || 'volunteer'
 
-  function handleSetPage(p) { setPage(p); setMenuOpen(false) }
+  function handleSetPage(p) {
+    setPage(p)
+    setMenuOpen(false)
+    // Revenir au sommaire des événements quand on clique sur la nav
+    if (p === 'events') setSelectedEventId(null)
+  }
 
   function renderPage() {
     if (page === 'dashboard') {
@@ -416,8 +444,8 @@ export default function AppLayout({ session, onLogout }) {
       return <DashboardVolunteer profile={profile} stats={stats} activeEventName={activeEventName} setPage={handleSetPage} />
     }
     if (page === 'admin') return <PageAdmin setPage={handleSetPage} />
-    if (page === 'events' && selectedEventId) return <PageEventDetail eventId={selectedEventId} profile={profile} onBack={() => setSelectedEventId(null)} onSetActiveEvent={(id, name) => { setActiveEventId(id); setActiveEventName(name); setSelectedEventId(null) }} />
-    if (page === 'events') return <PageEvents profile={profile} onSetActiveEvent={(id, name) => { setActiveEventId(id); setActiveEventName(name) }} onViewDetail={(id) => setSelectedEventId(id)} />
+    if (page === 'events' && selectedEventId) return <PageEventDetail eventId={selectedEventId} profile={profile} onBack={() => setSelectedEventId(null)} onSetActiveEvent={(id, name) => { setActiveEvent(id, name); setSelectedEventId(null) }} />
+    if (page === 'events') return <PageEvents profile={profile} onSetActiveEvent={(id, name) => setActiveEvent(id, name)} onViewDetail={(id) => setSelectedEventId(id)} activeEventId={activeEventId} />
     if (page === 'users') return <PageUsers profile={profile} activeEventId={activeEventId} />
     if (page === 'benevoles') return <PageBenevoles profile={profile} activeEventId={activeEventId} activeEventName={activeEventName} />
     if (page === 'postes') return <PagePostes profile={profile} activeEventId={activeEventId} activeEventName={activeEventName} />

@@ -33,6 +33,20 @@ const btnDanger = { background: '#fef2f2', color: '#dc2626', border: '1px solid 
 const emptyForm = { name: '', description: '', location: '', volunteers_required: 1, start_time: '', end_time: '', instructions: '' }
 
 export default function PagePostes({ profile, activeEventId, activeEventName }) {
+  const [allEvents, setAllEvents] = useState([])
+  const [currentEventId, setCurrentEventId] = useState(activeEventId)
+  const [currentEventName, setCurrentEventName] = useState(activeEventName)
+
+  useEffect(() => {
+    setCurrentEventId(activeEventId)
+    setCurrentEventName(activeEventName)
+  }, [activeEventId, activeEventName])
+
+  useEffect(() => {
+    supabase.from('events').select('id, name').neq('status', 'archived').order('start_date')
+      .then(({ data }) => setAllEvents(data || []))
+  }, [])
+
   const [postes, setPostes] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -45,7 +59,7 @@ export default function PagePostes({ profile, activeEventId, activeEventName }) 
 
   const canManage = profile?.role === 'admin' || profile?.role === 'organizer'
 
-  useEffect(() => { if (activeEventId) loadPostes() }, [activeEventId])
+  useEffect(() => { if (currentEventId) loadPostes() }, [currentEventId])
 
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(''), 2500) }
 
@@ -54,7 +68,7 @@ export default function PagePostes({ profile, activeEventId, activeEventName }) 
     const { data } = await supabase
       .from('positions')
       .select('*, shifts(*, assignments(*, profiles(first_name, last_name)))')
-      .eq('event_id', activeEventId)
+      .eq('event_id', currentEventId)
       .order('name')
     setPostes(data || [])
     setLoading(false)
@@ -75,7 +89,7 @@ export default function PagePostes({ profile, activeEventId, activeEventName }) 
   async function handleSave() {
     if (!form.name.trim()) { setError('Le nom du poste est obligatoire'); return }
     setSaving(true); setError('')
-    const payload = { name: form.name.trim(), description: form.description, location: form.location, volunteers_required: parseInt(form.volunteers_required) || 1, instructions: form.instructions, event_id: activeEventId }
+    const payload = { name: form.name.trim(), description: form.description, location: form.location, volunteers_required: parseInt(form.volunteers_required) || 1, instructions: form.instructions, event_id: currentEventId }
     let positeId = editPoste?.id
     if (editPoste) {
       await supabase.from('positions').update(payload).eq('id', editPoste.id)
@@ -86,7 +100,7 @@ export default function PagePostes({ profile, activeEventId, activeEventName }) 
     if (positeId && form.start_time && form.end_time) {
       const { data: sh } = await supabase.from('shifts').select('id').eq('position_id', positeId)
       if (sh?.length) await supabase.from('shifts').update({ start_time: form.start_time, end_time: form.end_time, volunteers_required: parseInt(form.volunteers_required) || 1 }).eq('position_id', positeId)
-      else await supabase.from('shifts').insert({ position_id: positeId, event_id: activeEventId, start_time: form.start_time, end_time: form.end_time, volunteers_required: parseInt(form.volunteers_required) || 1 })
+      else await supabase.from('shifts').insert({ position_id: positeId, event_id: currentEventId, start_time: form.start_time, end_time: form.end_time, volunteers_required: parseInt(form.volunteers_required) || 1 })
     }
     setSaving(false); setShowModal(false); loadPostes()
     showToast(editPoste ? 'Poste mis à jour' : 'Poste créé')
@@ -100,9 +114,19 @@ export default function PagePostes({ profile, activeEventId, activeEventName }) 
     setDeleteId(null); loadPostes(); showToast('Poste supprimé')
   }
 
-  if (!activeEventId) return (
+  if (!currentEventId) return (
     <div>
       <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>Postes</h1>
+          {/* Sélecteur d'événement */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+            <span style={{ fontSize: 13, color: '#6b7280' }}>Événement :</span>
+            <select value={currentEventId || ''}
+              onChange={e => { const ev = allEvents.find(x => x.id === e.target.value); setCurrentEventId(e.target.value); setCurrentEventName(ev?.name || '') }}
+              style={{ padding: '6px 12px', borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 13, fontFamily: 'Inter, sans-serif', color: '#111', background: '#fff', cursor: 'pointer' }}>
+              <option value="">- Choisir -</option>
+              {allEvents.map(ev => <option key={ev.id} value={ev.id}>{ev.name}</option>)}
+            </select>
+          </div>
       <div style={{ background: '#fff', borderRadius: 12, border: '2px dashed #e5e7eb', padding: 48, textAlign: 'center', marginTop: 20 }}>
         <div style={{ fontSize: 36, marginBottom: 8 }}>📍</div>
         <div style={{ fontWeight: 600, color: '#374151' }}>Aucun événement actif</div>
@@ -120,6 +144,16 @@ export default function PagePostes({ profile, activeEventId, activeEventName }) 
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>Postes</h1>
+          {/* Sélecteur d'événement */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+            <span style={{ fontSize: 13, color: '#6b7280' }}>Événement :</span>
+            <select value={currentEventId || ''}
+              onChange={e => { const ev = allEvents.find(x => x.id === e.target.value); setCurrentEventId(e.target.value); setCurrentEventName(ev?.name || '') }}
+              style={{ padding: '6px 12px', borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 13, fontFamily: 'Inter, sans-serif', color: '#111', background: '#fff', cursor: 'pointer' }}>
+              <option value="">- Choisir -</option>
+              {allEvents.map(ev => <option key={ev.id} value={ev.id}>{ev.name}</option>)}
+            </select>
+          </div>
           <p style={{ fontSize: 14, color: '#6b7280' }}>Gérez les postes et missions de l'événement.</p>
         </div>
         {canManage && <button onClick={openCreate} style={btnPrimary}>+ Nouveau poste</button>}

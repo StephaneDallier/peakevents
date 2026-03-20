@@ -53,12 +53,27 @@ export default function PageBenevoles({ profile, activeEventId, activeEventName 
   const [adding, setAdding] = useState(false)
   const [removeId, setRemoveId] = useState(null)
   const [toast, setToast] = useState('')
+  const [allEvents, setAllEvents] = useState([])
+  const [currentEventId, setCurrentEventId] = useState(activeEventId)
+  const [currentEventName, setCurrentEventName] = useState(activeEventName)
 
   const canManage = profile?.role === 'admin' || profile?.role === 'organizer'
 
+  // Sync avec prop quand elle change
   useEffect(() => {
-    if (activeEventId) loadBenevoles()
-  }, [activeEventId])
+    setCurrentEventId(activeEventId)
+    setCurrentEventName(activeEventName)
+  }, [activeEventId, activeEventName])
+
+  useEffect(() => {
+    // Charger tous les événements pour le sélecteur
+    supabase.from('events').select('id, name').neq('status', 'archived').order('start_date')
+      .then(({ data }) => setAllEvents(data || []))
+  }, [])
+
+  useEffect(() => {
+    if (currentEventId) loadBenevoles()
+  }, [currentEventId])
 
   function showToast(msg) {
     setToast(msg)
@@ -68,8 +83,8 @@ export default function PageBenevoles({ profile, activeEventId, activeEventName 
   async function loadBenevoles() {
     setLoading(true)
     const [volRes, affRes] = await Promise.all([
-      supabase.from('event_volunteers').select('*, profiles(*)').eq('event_id', activeEventId),
-      supabase.from('assignments').select('volunteer_id, shifts(positions(name))').eq('event_id', activeEventId),
+      supabase.from('event_volunteers').select('*, profiles(*)').eq('event_id', currentEventId),
+      supabase.from('assignments').select('volunteer_id, shifts(positions(name))').eq('event_id', currentEventId),
     ])
 
     const map = {}
@@ -98,7 +113,10 @@ export default function PageBenevoles({ profile, activeEventId, activeEventName 
   async function handleAdd() {
     if (!selectedUserId) { setAddError('Sélectionnez un bénévole'); return }
     setAdding(true)
-    const { error } = await supabase.from('event_volunteers').insert({ event_id: activeEventId, user_id: selectedUserId, notes, status: 'accepted' })
+    const { error } = await supabase.from('event_volunteers').upsert(
+      { event_id: currentEventId, user_id: selectedUserId, notes, status: 'accepted' },
+      { onConflict: 'event_id,user_id' }
+    )
     setAdding(false)
     if (error) { setAddError(error.message); return }
     setShowAdd(false)
@@ -113,7 +131,7 @@ export default function PageBenevoles({ profile, activeEventId, activeEventName 
     showToast('Bénévole retiré')
   }
 
-  if (!activeEventId) return (
+  if (!currentEventId) return (
     <div>
       <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>Bénévoles</h1>
       <div style={{ background: '#fff', borderRadius: 12, border: '2px dashed #e5e7eb', padding: 48, textAlign: 'center', marginTop: 20 }}>
@@ -133,14 +151,30 @@ export default function PageBenevoles({ profile, activeEventId, activeEventName 
       )}
 
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
-        <div>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>Bénévoles</h1>
-          <p style={{ fontSize: 14, color: '#6b7280' }}>
-            Annuaire des bénévoles inscrits à l'événement.
-            {!loading && <span style={{ marginLeft: 8, fontWeight: 600, color: '#1C3829' }}>{volunteers.length} inscrits</span>}
-          </p>
+        <div style={{ flex: 1 }}>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 8 }}>Bénévoles</h1>
+          {/* Sélecteur d'événement */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 13, color: '#6b7280' }}>Événement :</span>
+            <select
+              value={currentEventId || ''}
+              onChange={e => {
+                const ev = allEvents.find(x => x.id === e.target.value)
+                setCurrentEventId(e.target.value)
+                setCurrentEventName(ev?.name || '')
+              }}
+              style={{ padding: '6px 12px', borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 13, fontFamily: 'Inter, sans-serif', color: '#111', background: '#fff', cursor: 'pointer' }}>
+              <option value="">- Choisir un événement -</option>
+              {allEvents.map(ev => (
+                <option key={ev.id} value={ev.id}>{ev.name}</option>
+              ))}
+            </select>
+            {!loading && currentEventId && (
+              <span style={{ fontWeight: 600, color: '#1C3829', fontSize: 13 }}>{volunteers.length} inscrits</span>
+            )}
+          </div>
         </div>
-        {canManage && (
+        {canManage && currentEventId && (
           <button onClick={openAddModal} style={btnPrimary}>+ Ajouter un bénévole</button>
         )}
       </div>

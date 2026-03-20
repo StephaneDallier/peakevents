@@ -67,7 +67,7 @@ function SportBadge({ sport }) {
   )
 }
 
-export default function PageEvents({ profile, onSetActiveEvent, onViewDetail }) {
+export default function PageEvents({ profile, onSetActiveEvent, onViewDetail, activeEventId }) {
   const [events, setEvents] = useState([])
   const [filtered, setFiltered] = useState([])
   const [filter, setFilter] = useState('all')
@@ -223,13 +223,14 @@ export default function PageEvents({ profile, onSetActiveEvent, onViewDetail }) 
           {filtered.map(ev => {
             const { pct, color, aff, req } = getRemplissage(ev)
             const hasImage = !!ev.poster_url
+            const isActive = ev.id === activeEventId
 
             return (
               <div key={ev.id}
                 onClick={() => onViewDetail && onViewDetail(ev.id)}
-                style={{ background: '#fff', borderRadius: 16, border: '1px solid #e5e7eb', overflow: 'hidden', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', transition: 'box-shadow 0.2s' }}
+                style={{ background: '#fff', borderRadius: 16, border: isActive ? '2.5px solid #1C3829' : '1px solid #e5e7eb', overflow: 'hidden', cursor: 'pointer', boxShadow: isActive ? '0 4px 16px rgba(28,56,41,0.15)' : '0 2px 8px rgba(0,0,0,0.06)', transition: 'box-shadow 0.2s' }}
                 onMouseEnter={e => e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)'}
-                onMouseLeave={e => e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)'}>
+                onMouseLeave={e => e.currentTarget.style.boxShadow = isActive ? '0 4px 16px rgba(28,56,41,0.15)' : '0 2px 8px rgba(0,0,0,0.06)'}>
 
                 {/* Image / Hero */}
                 <div style={{ position: 'relative', height: 160, overflow: 'hidden' }}>

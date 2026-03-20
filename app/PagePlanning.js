@@ -11,25 +11,49 @@ const COLORS_COMPLET = ['#1C3829', '#2D5A3D', '#0891b2', '#1d4ed8', '#7c3aed']
 const COLORS_INCOMPLET = ['#F97316', '#ea580c', '#f59e0b', '#dc2626', '#db2777']
 
 export default function PagePlanning({ profile, activeEventId, activeEventName }) {
+  const [allEvents, setAllEvents] = useState([])
+  const [currentEventId, setCurrentEventId] = useState(activeEventId)
+  const [currentEventName, setCurrentEventName] = useState(activeEventName)
+
+  useEffect(() => {
+    setCurrentEventId(activeEventId)
+    setCurrentEventName(activeEventName)
+  }, [activeEventId, activeEventName])
+
+  useEffect(() => {
+    supabase.from('events').select('id, name').neq('status', 'archived').order('start_date')
+      .then(({ data }) => setAllEvents(data || []))
+  }, [])
+
   const [postes, setPostes] = useState([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => { if (activeEventId) loadPlanning() }, [activeEventId])
+  useEffect(() => { if (currentEventId) loadPlanning() }, [currentEventId])
 
   async function loadPlanning() {
     setLoading(true)
     const { data } = await supabase
       .from('positions')
       .select('*, shifts(*, assignments(*, profiles(first_name, last_name)))')
-      .eq('event_id', activeEventId)
+      .eq('event_id', currentEventId)
       .order('name')
     setPostes(data || [])
     setLoading(false)
   }
 
-  if (!activeEventId) return (
+  if (!currentEventId) return (
     <div>
       <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>Planning</h1>
+          {/* Sélecteur d'événement */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+            <span style={{ fontSize: 13, color: '#6b7280' }}>Événement :</span>
+            <select value={currentEventId || ''}
+              onChange={e => { const ev = allEvents.find(x => x.id === e.target.value); setCurrentEventId(e.target.value); setCurrentEventName(ev?.name || '') }}
+              style={{ padding: '6px 12px', borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 13, fontFamily: 'Inter, sans-serif', color: '#111', background: '#fff', cursor: 'pointer' }}>
+              <option value="">- Choisir -</option>
+              {allEvents.map(ev => <option key={ev.id} value={ev.id}>{ev.name}</option>)}
+            </select>
+          </div>
       <div style={{ background: '#fff', borderRadius: 12, border: '2px dashed #e5e7eb', padding: 48, textAlign: 'center', marginTop: 20 }}>
         <div style={{ fontSize: 36, marginBottom: 8 }}>📅</div>
         <div style={{ fontWeight: 600, color: '#374151' }}>Aucun événement actif</div>
@@ -43,6 +67,16 @@ export default function PagePlanning({ profile, activeEventId, activeEventName }
     <div style={{ fontFamily: 'Inter, sans-serif' }}>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>Planning</h1>
+          {/* Sélecteur d'événement */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+            <span style={{ fontSize: 13, color: '#6b7280' }}>Événement :</span>
+            <select value={currentEventId || ''}
+              onChange={e => { const ev = allEvents.find(x => x.id === e.target.value); setCurrentEventId(e.target.value); setCurrentEventName(ev?.name || '') }}
+              style={{ padding: '6px 12px', borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 13, fontFamily: 'Inter, sans-serif', color: '#111', background: '#fff', cursor: 'pointer' }}>
+              <option value="">- Choisir -</option>
+              {allEvents.map(ev => <option key={ev.id} value={ev.id}>{ev.name}</option>)}
+            </select>
+          </div>
         <p style={{ fontSize: 14, color: '#6b7280' }}>Vue globale du planning de l'événement.</p>
       </div>
 
