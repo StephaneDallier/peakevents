@@ -244,9 +244,12 @@ export default function PageEvents({ profile, onSetActiveEvent, onViewDetail, ac
                     </div>
                   )}
                   {/* Badges overlay */}
-                  <div style={{ position: 'absolute', top: 10, left: 10, display: 'flex', gap: 6 }}>
+                  <div style={{ position: 'absolute', top: 10, left: 10, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     <StatusBadge status={ev.status} />
                     {ev.sport && <SportBadge sport={ev.sport} />}
+                    {isActive && (
+                      <span style={{ background: '#1C3829', color: '#fff', borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 700 }}>✓ En cours</span>
+                    )}
                   </div>
                   {/* Boutons admin overlay */}
                   {canEdit && (
@@ -323,11 +326,15 @@ export default function PageEvents({ profile, onSetActiveEvent, onViewDetail, ac
 
                 {/* Footer */}
                 <div style={{ padding: '10px 18px', borderTop: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 12, color: '#9ca3af' }}>Cliquer pour voir le détail</span>
-                  <button onClick={e => { e.stopPropagation(); onSetActiveEvent && onSetActiveEvent(ev.id, ev.name) }}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#F97316', fontWeight: 600, fontFamily: 'Inter, sans-serif', padding: 0 }}>
-                    Définir actif →
-                  </button>
+                  <span style={{ fontSize: 12, color: '#9ca3af' }}>Voir le détail →</span>
+                  {!isActive ? (
+                    <button onClick={e => { e.stopPropagation(); onSetActiveEvent && onSetActiveEvent(ev.id, ev.name) }}
+                      style={{ background: 'none', border: '1px solid #1C3829', borderRadius: 6, cursor: 'pointer', fontSize: 12, color: '#1C3829', fontWeight: 600, fontFamily: 'Inter, sans-serif', padding: '4px 10px' }}>
+                      Travailler sur cet événement
+                    </button>
+                  ) : (
+                    <span style={{ fontSize: 12, color: '#1C3829', fontWeight: 700 }}>✓ Événement actif</span>
+                  )}
                 </div>
               </div>
             )
