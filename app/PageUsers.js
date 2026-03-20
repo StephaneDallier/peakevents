@@ -67,6 +67,7 @@ export default function PageUsers({ profile: currentProfile }) {
   const [toast, setToast] = useState('')
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
+  const [highlightId, setHighlightId] = useState(null)
 
   // Modal création
   const [showCreate, setShowCreate] = useState(false)
@@ -176,8 +177,11 @@ export default function PageUsers({ profile: currentProfile }) {
     setCreating(false)
     setShowCreate(false)
     setCreateForm(emptyCreateForm)
-    loadUsers()
-    showToast(`Compte créé : ${createForm.first_name} ${createForm.last_name}`)
+    await loadUsers()
+    // Mettre en surbrillance le compte créé
+    setHighlightId(data?.user?.id || null)
+    setTimeout(() => setHighlightId(null), 5000)
+    showToast(`✅ Compte créé : ${createForm.first_name} ${createForm.last_name}`)
   }
 
   // --- EDITION ---
@@ -295,12 +299,17 @@ export default function PageUsers({ profile: currentProfile }) {
               ) : filtered.length === 0 ? (
                 <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: '#9ca3af' }}>Aucun utilisateur</td></tr>
               ) : filtered.map((u, i) => (
-                <tr key={u.id} style={{ borderBottom: i < filtered.length - 1 ? '1px solid #f9fafb' : 'none' }}>
+                <tr key={u.id} style={{ borderBottom: i < filtered.length - 1 ? '1px solid #f9fafb' : 'none', background: u.id === highlightId ? '#f0fdf4' : 'transparent', transition: 'background 0.5s' }}>
                   <td style={{ padding: '12px 16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <Avatar first={u.first_name} last={u.last_name} />
                       <div>
-                        <div style={{ fontWeight: 600, color: '#111' }}>{u.first_name} {u.last_name}</div>
+                        <div style={{ fontWeight: 600, color: '#111', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {u.first_name} {u.last_name}
+                          {u.id === highlightId && (
+                            <span style={{ background: '#1C3829', color: '#fff', borderRadius: 20, padding: '1px 7px', fontSize: 10, fontWeight: 700 }}>Nouveau</span>
+                          )}
+                        </div>
                         {u.comment && <div style={{ fontSize: 11, color: '#9ca3af' }}>{u.comment}</div>}
                       </div>
                     </div>
