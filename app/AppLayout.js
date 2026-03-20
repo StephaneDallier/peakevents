@@ -98,6 +98,7 @@ function SidebarContent({ page, setPage, profile, onLogout, activeEventName, onC
           <NavItem item={{ id: 'affectations', label: 'Affectations', icon: Icons.affectations }} active={page === 'affectations'} onClick={() => nav('affectations')} />
           <NavItem item={{ id: 'planning', label: 'Planning', icon: Icons.planning }} active={page === 'planning'} onClick={() => nav('planning')} />
           <NavItem item={{ id: 'projet', label: 'Projet', icon: Icons.projet }} active={page === 'projet'} onClick={() => nav('projet')} />
+          <NavItem item={{ id: 'missions', label: 'Suivi missions', icon: Icons.missions }} active={page === 'missions'} onClick={() => nav('missions')} />
           <NavSection label="Équipe" />
           <NavItem item={{ id: 'users', label: 'Mes bénévoles', icon: Icons.users }} active={page === 'users'} onClick={() => nav('users')} />
         </>)}
@@ -454,7 +455,7 @@ export default function AppLayout({ session, onLogout }) {
     if (page === 'postes') return <PagePostes profile={profile} activeEventId={activeEventId} activeEventName={activeEventName} />
     if (page === 'affectations') return <PageAffectations profile={profile} activeEventId={activeEventId} activeEventName={activeEventName} />
     if (page === 'planning') return <PagePlanning profile={profile} activeEventId={activeEventId} activeEventName={activeEventName} />
-    if (page === 'missions') return <PageMissions profile={profile} />
+    if (page === 'missions') return <PageMissions profile={profile} activeEventId={activeEventId} activeEventName={activeEventName} />
     if (page === 'catalogue') return <PageCatalogue profile={profile} />
     if (page === 'profil') return <PageProfil profile={profile} onProfileUpdate={() => { supabase.from('profiles').select('*').eq('id', session?.user?.id).single().then(({ data }) => { if (data) setProfile(data) }) }} />
     if (page === 'projet') return <PageProjet profile={profile} activeEventId={activeEventId} activeEventName={activeEventName} />
