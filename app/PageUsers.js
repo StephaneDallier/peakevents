@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
-function Modal({ title, onClose, children }) {
+function Modal({ title, onClose, children, wide }) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <div style={{ background: '#fff', borderRadius: 16, padding: 32, width: '100%', maxWidth: 480, boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+      <div style={{ background: '#fff', borderRadius: 16, padding: 32, width: '100%', maxWidth: wide ? 560 : 480, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <div style={{ fontSize: 17, fontWeight: 800, color: '#111' }}>{title}</div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, color: '#9ca3af' }}>&times;</button>
@@ -21,33 +21,39 @@ const inputStyle = { width: '100%', padding: '10px 13px', border: '1.5px solid #
 const btnPrimary = { background: '#1C3829', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 16px', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }
 const btnSecondary = { background: '#fff', color: '#374151', border: '1.5px solid #e5e7eb', borderRadius: 6, padding: '4px 8px', fontWeight: 600, fontSize: 11, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }
 const btnDanger = { background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: 6, padding: '4px 8px', fontWeight: 600, fontSize: 11, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }
-const btnOrange = { background: '#FEF3E9', color: '#F97316', border: '1px solid #fed7aa', borderRadius: 6, padding: '4px 8px', fontWeight: 600, fontSize: 11, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }
 
 function Avatar({ first, last }) {
   const initials = ((first?.[0] || '') + (last?.[0] || '')).toUpperCase() || '?'
   return (
-    <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#1C3829', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 11, flexShrink: 0 }}>
+    <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#1C3829', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12, flexShrink: 0 }}>
       {initials}
     </div>
   )
 }
 
-function getSkills(p) {
-  try {
-    if (!p.skills) return []
-    if (Array.isArray(p.skills)) return p.skills
-    if (typeof p.skills === 'string') return JSON.parse(p.skills)
-    return []
-  } catch { return [] }
-}
-
-function Field({ label, children }) {
+function Field({ label, children, hint }) {
   return (
     <div style={{ marginBottom: 14 }}>
       <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{label}</label>
       {children}
+      {hint && <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 3 }}>{hint}</div>}
     </div>
   )
+}
+
+function RoleBadge({ role }) {
+  const map = {
+    admin: { bg: '#fef2f2', color: '#dc2626', label: 'Admin' },
+    organizer: { bg: '#eff6ff', color: '#2563eb', label: 'Organisateur' },
+    volunteer: { bg: '#f0fdf4', color: '#16a34a', label: 'Bénévole' },
+  }
+  const s = map[role] || map.volunteer
+  return <span style={{ background: s.bg, color: s.color, borderRadius: 20, padding: '2px 8px', fontSize: 11, fontWeight: 700 }}>{s.label}</span>
+}
+
+const emptyCreateForm = {
+  first_name: '', last_name: '', email: '', password: '',
+  phone: '', club: '', role: 'volunteer', comment: ''
 }
 
 export default function PageUsers({ profile: currentProfile }) {
@@ -56,18 +62,27 @@ export default function PageUsers({ profile: currentProfile }) {
   const [deleteId, setDeleteId] = useState(null)
   const [editUser, setEditUser] = useState(null)
   const [editForm, setEditForm] = useState({})
-  const [resetUser, setResetUser] = useState(null)
   const [assignUser, setAssignUser] = useState(null)
   const [myEvents, setMyEvents] = useState([])
   const [toast, setToast] = useState('')
   const [saving, setSaving] = useState(false)
-  const [showInvite, setShowInvite] = useState(false)
-  const [inviteEmail, setInviteEmail] = useState('')
-  const [inviting, setInviting] = useState(false)
+  const [search, setSearch] = useState('')
+
+  // Modal création
+  const [showCreate, setShowCreate] = useState(false)
+  const [createForm, setCreateForm] = useState(emptyCreateForm)
+  const [createError, setCreateError] = useState('')
+  const [creating, setCreating] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const isAdmin = currentProfile?.role === 'admin'
   const isOrganizer = currentProfile?.role === 'organizer'
   const canAccess = isAdmin || isOrganizer
+
+  // Rôles disponibles selon le rôle de l'utilisateur connecté
+  const availableRoles = isAdmin
+    ? [{ value: 'volunteer', label: 'Bénévole' }, { value: 'organizer', label: 'Organisateur' }, { value: 'admin', label: 'Administrateur' }]
+    : [{ value: 'volunteer', label: 'Bénévole' }, { value: 'organizer', label: 'Organisateur' }]
 
   useEffect(() => {
     if (!canAccess) return
@@ -87,7 +102,7 @@ export default function PageUsers({ profile: currentProfile }) {
       const { data: evVols } = await supabase.from('event_volunteers').select('user_id').in('event_id', eventIds)
       const userIds = [...new Set((evVols || []).map(v => v.user_id))]
       if (userIds.length === 0) { setUsers([]); setLoading(false); return }
-      const { data } = await supabase.from('profiles').select('*').in('id', userIds).eq('role', 'volunteer').order('last_name')
+      const { data } = await supabase.from('profiles').select('*').in('id', userIds).order('last_name')
       setUsers(data || [])
     }
     setLoading(false)
@@ -103,33 +118,79 @@ export default function PageUsers({ profile: currentProfile }) {
     }
   }
 
-  function showToast(msg) {
-    setToast(msg)
-    setTimeout(() => setToast(''), 2500)
+  function showToast(msg) { setToast(msg); setTimeout(() => setToast(''), 2500) }
+
+  // --- CREATION COMPTE ---
+  async function handleCreate() {
+    if (!createForm.first_name.trim() || !createForm.last_name.trim()) {
+      setCreateError('Prénom et nom sont obligatoires')
+      return
+    }
+    if (!createForm.email.trim()) {
+      setCreateError("L'email est obligatoire")
+      return
+    }
+    if (!createForm.password || createForm.password.length < 6) {
+      setCreateError('Le mot de passe doit faire au moins 6 caractères')
+      return
+    }
+    setCreating(true)
+    setCreateError('')
+
+    // Créer le compte via Supabase Auth
+    const { data, error } = await supabase.auth.signUp({
+      email: createForm.email.trim(),
+      password: createForm.password,
+      options: {
+        data: {
+          first_name: createForm.first_name.trim(),
+          last_name: createForm.last_name.trim(),
+          phone: createForm.phone.trim(),
+          club: createForm.club.trim(),
+          role: createForm.role,
+          comment: createForm.comment.trim(),
+        }
+      }
+    })
+
+    if (error) {
+      setCreating(false)
+      setCreateError('Erreur : ' + error.message)
+      return
+    }
+
+    // Mettre à jour le profil avec le bon rôle (le trigger crée le profil mais on force le rôle)
+    if (data?.user?.id) {
+      await supabase.from('profiles').upsert({
+        id: data.user.id,
+        first_name: createForm.first_name.trim(),
+        last_name: createForm.last_name.trim(),
+        phone: createForm.phone.trim() || null,
+        club: createForm.club.trim() || null,
+        role: createForm.role,
+        comment: createForm.comment.trim() || null,
+        is_active: true,
+      })
+    }
+
+    setCreating(false)
+    setShowCreate(false)
+    setCreateForm(emptyCreateForm)
+    loadUsers()
+    showToast(`Compte créé : ${createForm.first_name} ${createForm.last_name}`)
   }
 
-  async function changeRole(uid, role) {
-    await supabase.from('profiles').update({ role }).eq('id', uid)
-    setUsers(prev => prev.map(u => u.id === uid ? { ...u, role } : u))
-    showToast('Role mis à jour')
-  }
-
-  async function toggleActive(uid, current) {
-    await supabase.from('profiles').update({ is_active: !current }).eq('id', uid)
-    setUsers(prev => prev.map(u => u.id === uid ? { ...u, is_active: !current } : u))
-    showToast(current ? 'Utilisateur désactivé' : 'Utilisateur activé')
-  }
-
-  async function handleDelete(uid) {
-    await supabase.from('profiles').delete().eq('id', uid)
-    setDeleteId(null)
-    setUsers(prev => prev.filter(u => u.id !== uid))
-    showToast('Utilisateur supprimé')
-  }
-
+  // --- EDITION ---
   function openEdit(u) {
     setEditUser(u)
-    setEditForm({ first_name: u.first_name || '', last_name: u.last_name || '', phone: u.phone || '', club: u.club || '', role: u.role || 'volunteer' })
+    setEditForm({
+      first_name: u.first_name || '',
+      last_name: u.last_name || '',
+      phone: u.phone || '',
+      club: u.club || '',
+      comment: u.comment || '',
+      role: u.role || 'volunteer'
+    })
   }
 
   async function handleSaveEdit() {
@@ -139,6 +200,7 @@ export default function PageUsers({ profile: currentProfile }) {
       last_name: editForm.last_name,
       phone: editForm.phone,
       club: editForm.club,
+      comment: editForm.comment,
       ...(isAdmin ? { role: editForm.role } : {}),
     }).eq('id', editUser.id)
     setSaving(false)
@@ -148,182 +210,242 @@ export default function PageUsers({ profile: currentProfile }) {
     showToast('Compte mis à jour')
   }
 
-  async function handleResetPassword(email) {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin })
-    setResetUser(null)
-    showToast(error ? 'Erreur : ' + error.message : 'Email de réinitialisation envoyé')
+  async function changeRole(uid, role) {
+    await supabase.from('profiles').update({ role }).eq('id', uid)
+    setUsers(prev => prev.map(u => u.id === uid ? { ...u, role } : u))
+    showToast('Rôle mis à jour')
+  }
+
+  async function toggleActive(uid, current) {
+    await supabase.from('profiles').update({ is_active: !current }).eq('id', uid)
+    setUsers(prev => prev.map(u => u.id === uid ? { ...u, is_active: !current } : u))
+    showToast(current ? 'Compte désactivé' : 'Compte activé')
+  }
+
+  async function handleDelete(uid) {
+    await supabase.from('profiles').delete().eq('id', uid)
+    setDeleteId(null)
+    setUsers(prev => prev.filter(u => u.id !== uid))
+    showToast('Utilisateur supprimé')
   }
 
   async function handleAssign(userId, eventId) {
     const { error } = await supabase.from('event_volunteers').upsert(
-      { user_id: userId, event_id: eventId, status: 'acceptéd' },
+      { user_id: userId, event_id: eventId, status: 'accepted' },
       { onConflict: 'user_id,event_id' }
     )
     setAssignUser(null)
-    showToast(error ? 'Erreur : ' + error.message : "Bénévole assigné a l'événement")
+    showToast(error ? 'Erreur : ' + error.message : "Bénévole assigné à l'événement")
   }
 
-  async function handleInvite() {
-    if (!inviteEmail) return
-    setInviting(true)
-    const { error } = await supabase.auth.resetPasswordForEmail(inviteEmail, { redirectTo: window.location.origin })
-    setInviting(false)
-    setShowInvite(false)
-    setInviteEmail('')
-    showToast(error ? 'Erreur : ' + error.message : 'Invitation envoyée a ' + inviteEmail)
-  }
+  if (!canAccess) return (
+    <div style={{ fontFamily: 'Inter, sans-serif', padding: 40, textAlign: 'center', color: '#9ca3af' }}>
+      <div style={{ fontSize: 36, marginBottom: 8 }}>🔒</div>
+      <div style={{ fontWeight: 600 }}>Accès non autorisé</div>
+    </div>
+  )
 
-  if (!canAccess) {
-    return (
-      <div style={{ textAlign: 'center', padding: 80 }}>
-        <div style={{ fontSize: 40, marginBottom: 12 }}>🔒</div>
-        <div style={{ fontWeight: 700, fontSize: 16, color: '#374151' }}>Accès non autorisé</div>
-      </div>
-    )
-  }
-
-  const headers = isAdmin
-    ? ['Nom', 'Email', 'Compétences', 'Role', 'Statut', 'Actions']
-    : ['Nom', 'Email', 'Statut', 'Actions']
+  const filtered = users.filter(u => {
+    if (!search) return true
+    const q = search.toLowerCase()
+    return (u.first_name + ' ' + u.last_name + ' ' + (u.email || '')).toLowerCase().includes(q)
+  })
 
   return (
-    <div>
+    <div style={{ fontFamily: 'Inter, sans-serif' }}>
       {toast && (
-        <div style={{ position: 'fixed', bottom: 24, right: 24, background: '#1C3829', color: '#fff', borderRadius: 10, padding: '12px 20px', fontSize: 14, fontWeight: 600, zIndex: 2000, boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
-          {toast}
-        </div>
+        <div style={{ position: 'fixed', bottom: 24, right: 24, background: '#1C3829', color: '#fff', borderRadius: 10, padding: '12px 20px', fontSize: 14, fontWeight: 600, zIndex: 2000, boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>{toast}</div>
       )}
 
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111', marginBottom: 4 }}>Utilisateurs</h1>
-          <p style={{ fontSize: 14, color: '#6b7280' }}>
-            {isAdmin ? 'Gestion de tous les comptes de la plateforme.' : 'Bénévoles inscrits sur vos événements.'}
-          </p>
+          <p style={{ fontSize: 14, color: '#6b7280' }}>{filtered.length} compte{filtered.length > 1 ? 's' : ''}</p>
         </div>
-        <button onClick={() => setShowInvite(true)}
-          style={{ background: '#F97316', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 18px', fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'Inter, sans-serif', flexShrink: 0 }}>
-          + Inviter par email
+        <button onClick={() => { setCreateForm(emptyCreateForm); setCreateError(''); setShowCreate(true) }} style={btnPrimary}>
+          + Créer un compte
         </button>
       </div>
 
+      {/* Recherche */}
+      <div style={{ marginBottom: 16 }}>
+        <input
+          style={{ ...inputStyle, maxWidth: 320 }}
+          placeholder="Rechercher un utilisateur..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+      </div>
+
+      {/* Table */}
       <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                {headers.map(h => (
-                  <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.4px', whiteSpace: 'nowrap' }}>{h}</th>
+                {['Nom', 'Email', 'Téléphone', 'Club', 'Rôle', 'Statut', 'Actions'].map(h => (
+                  <th key={h} style={{ padding: '11px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.4px', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={headers.length} style={{ padding: 40, textAlign: 'center', color: '#9ca3af' }}>Chargement...</td></tr>
-              ) : users.length === 0 ? (
-                <tr><td colSpan={headers.length}>
-                  <div style={{ padding: 48, textAlign: 'center' }}>
-                    <div style={{ fontSize: 36, marginBottom: 8 }}>👥</div>
-                    <div style={{ fontWeight: 600, color: '#374151' }}>Aucun utilisateur</div>
-                    <div style={{ fontSize: 13, color: '#9ca3af', marginTop: 4 }}>
-                      {isOrganizer ? 'Aucun bénévole inscrit sur vos événements.' : ''}
+                <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: '#9ca3af' }}>Chargement...</td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: '#9ca3af' }}>Aucun utilisateur</td></tr>
+              ) : filtered.map((u, i) => (
+                <tr key={u.id} style={{ borderBottom: i < filtered.length - 1 ? '1px solid #f9fafb' : 'none' }}>
+                  <td style={{ padding: '12px 16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <Avatar first={u.first_name} last={u.last_name} />
+                      <div>
+                        <div style={{ fontWeight: 600, color: '#111' }}>{u.first_name} {u.last_name}</div>
+                        {u.comment && <div style={{ fontSize: 11, color: '#9ca3af' }}>{u.comment}</div>}
+                      </div>
                     </div>
-                  </div>
-                </td></tr>
-              ) : users.map((u, i) => {
-                const isMe = u.id === currentProfile?.id
-                const skills = getSkills(u)
-                return (
-                  <tr key={u.id} style={{ borderBottom: i < users.length - 1 ? '1px solid #f3f4f6' : 'none', background: isMe ? '#f0fdf4' : 'transparent' }}>
-                    <td style={{ padding: '10px 12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <Avatar first={u.first_name} last={u.last_name} />
-                        <div>
-                          <div style={{ fontWeight: 600, fontSize: 14, color: '#111' }}>
-                            {u.first_name || ''} {u.last_name || ''}
-                            {isMe && <span style={{ marginLeft: 6, fontSize: 11, color: '#16a34a', fontWeight: 600 }}>(moi)</span>}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td style={{ padding: '10px 12px', fontSize: 12, color: '#6b7280' }}>{u.email || '-'}</td>
-
-                    {isAdmin && (
-                      <td style={{ padding: '10px 12px', maxWidth: 120 }}>
-                        {skills.slice(0, 3).map((s, j) => (
-                          <span key={j} style={{ background: '#f0fdf4', color: '#15803d', borderRadius: 20, padding: '2px 8px', fontSize: 11, fontWeight: 600, marginRight: 3 }}>{s}</span>
-                        ))}
-                        {skills.length > 3 && <span style={{ fontSize: 11, color: '#9ca3af' }}>+{skills.length - 3}</span>}
-                        {skills.length === 0 && <span style={{ color: '#9ca3af', fontSize: 12 }}>-</span>}
-                      </td>
+                  </td>
+                  <td style={{ padding: '12px 16px', color: '#6b7280' }}>{u.email || <span style={{ color: '#d1d5db', fontStyle: 'italic' }}>—</span>}</td>
+                  <td style={{ padding: '12px 16px', color: '#6b7280' }}>{u.phone || '—'}</td>
+                  <td style={{ padding: '12px 16px', color: '#6b7280' }}>{u.club || '—'}</td>
+                  <td style={{ padding: '12px 16px' }}>
+                    {isAdmin ? (
+                      <select value={u.role} onChange={e => changeRole(u.id, e.target.value)}
+                        style={{ border: '1px solid #e5e7eb', borderRadius: 6, padding: '3px 6px', fontSize: 11, fontFamily: 'Inter, sans-serif', cursor: 'pointer', background: '#fff' }}>
+                        <option value="volunteer">Bénévole</option>
+                        <option value="organizer">Organisateur</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    ) : (
+                      <RoleBadge role={u.role} />
                     )}
-                    {isAdmin && (
-                      <td style={{ padding: '10px 12px' }}>
-                        <select value={u.role || 'volunteer'} onChange={e => changeRole(u.id, e.target.value)} disabled={isMe}
-                          style={{ padding: '3px 6px', borderRadius: 6, border: '1.5px solid #e5e7eb', fontSize: 11, fontFamily: 'Inter, sans-serif', cursor: isMe ? 'default' : 'pointer', background: '#fff', opacity: isMe ? 0.6 : 1 }}>
-                          <option value="volunteer">Bénévole</option>
-                          <option value="organizer">Organisateur</option>
-                          <option value="admin">Admin</option>
-                        </select>
-                      </td>
-                    )}
-                    <td style={{ padding: '10px 12px' }}>
-                      <span style={{ background: u.is_active ? '#dcfce7' : '#fef2f2', color: u.is_active ? '#16a34a' : '#dc2626', borderRadius: 20, padding: '3px 10px', fontSize: 12, fontWeight: 600 }}>
-                        {u.is_active ? 'Actif' : 'Inactif'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '10px 12px' }}>
-                      <div style={{ display: 'flex', gap: 4, flexWrap: 'nowrap', alignItems: 'center' }}>
-                        <button onClick={() => openEdit(u)} style={btnSecondary}>Modifier</button>
-                        {!isMe && (
-                          <>
-                            <button onClick={() => toggleActive(u.id, u.is_active)} style={btnSecondary}>
-                              {u.is_active ? 'Désactiver' : 'Activer'}
-                            </button>
-                            {isAdmin && (
-                              <button onClick={() => setResetUser(u)} style={btnOrange}>Mdp</button>
-                            )}
-                            {(isAdmin || isOrganizer) && (
-                              <button onClick={() => setAssignUser(u)} style={btnOrange}>Assigner</button>
-                            )}
-                            <button onClick={() => setDeleteId(u.id)} style={btnDanger}>Suppr.</button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
+                  </td>
+                  <td style={{ padding: '12px 16px' }}>
+                    <span style={{ background: u.is_active ? '#dcfce7' : '#f3f4f6', color: u.is_active ? '#16a34a' : '#9ca3af', borderRadius: 20, padding: '2px 8px', fontSize: 11, fontWeight: 600 }}>
+                      {u.is_active ? 'Actif' : 'Inactif'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '12px 16px' }}>
+                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                      <button onClick={() => openEdit(u)} style={btnSecondary}>Modifier</button>
+                      <button onClick={() => toggleActive(u.id, u.is_active)} style={{ ...btnSecondary, color: u.is_active ? '#dc2626' : '#16a34a', borderColor: u.is_active ? '#fca5a5' : '#bbf7d0' }}>
+                        {u.is_active ? 'Désactiver' : 'Activer'}
+                      </button>
+                      <button onClick={() => setAssignUser(u)} style={{ ...btnSecondary, color: '#F97316', borderColor: '#fed7aa' }}>Assigner</button>
+                      {isAdmin && u.id !== currentProfile?.id && (
+                        <button onClick={() => setDeleteId(u.id)} style={btnDanger}>Suppr.</button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
       </div>
 
+      {/* MODAL CREATION */}
+      {showCreate && (
+        <Modal title="Créer un compte" onClose={() => setShowCreate(false)} wide>
+          {createError && (
+            <div style={{ background: '#fef2f2', color: '#dc2626', borderRadius: 8, padding: '10px 13px', fontSize: 13, marginBottom: 14 }}>{createError}</div>
+          )}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <Field label="Prénom *">
+              <input style={inputStyle} value={createForm.first_name} onChange={e => setCreateForm({ ...createForm, first_name: e.target.value })} placeholder="Jean" />
+            </Field>
+            <Field label="Nom *">
+              <input style={inputStyle} value={createForm.last_name} onChange={e => setCreateForm({ ...createForm, last_name: e.target.value })} placeholder="Dupont" />
+            </Field>
+          </div>
+          <Field label="Email *" hint="Peut être fictif pour les tests (ex: test@peakevents.fr)">
+            <input style={inputStyle} type="email" value={createForm.email} onChange={e => setCreateForm({ ...createForm, email: e.target.value })} placeholder="jean.dupont@email.com" />
+          </Field>
+          <Field label="Mot de passe *" hint="Minimum 6 caractères">
+            <div style={{ position: 'relative' }}>
+              <input
+                style={{ ...inputStyle, paddingRight: 44 }}
+                type={showPassword ? 'text' : 'password'}
+                value={createForm.password}
+                onChange={e => setCreateForm({ ...createForm, password: e.target.value })}
+                placeholder="••••••••"
+              />
+              <button type="button" onClick={() => setShowPassword(!showPassword)}
+                style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#9ca3af' }}>
+                {showPassword ? '🙈' : '👁️'}
+              </button>
+            </div>
+          </Field>
+          <Field label="Rôle *">
+            <div style={{ display: 'flex', gap: 8 }}>
+              {availableRoles.map(r => (
+                <button key={r.value} type="button" onClick={() => setCreateForm({ ...createForm, role: r.value })}
+                  style={{
+                    flex: 1, padding: '10px 8px', border: '2px solid', borderRadius: 8, cursor: 'pointer',
+                    fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 600, textAlign: 'center',
+                    background: createForm.role === r.value ? '#1C3829' : '#fff',
+                    color: createForm.role === r.value ? '#fff' : '#374151',
+                    borderColor: createForm.role === r.value ? '#1C3829' : '#e5e7eb',
+                  }}>
+                  {r.label}
+                </button>
+              ))}
+            </div>
+          </Field>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <Field label="Téléphone">
+              <input style={inputStyle} value={createForm.phone} onChange={e => setCreateForm({ ...createForm, phone: e.target.value })} placeholder="06 00 00 00 00" />
+            </Field>
+            <Field label="Club / Association">
+              <input style={inputStyle} value={createForm.club} onChange={e => setCreateForm({ ...createForm, club: e.target.value })} placeholder="Club Trail Verdon" />
+            </Field>
+          </div>
+          <Field label="Commentaire">
+            <input style={inputStyle} value={createForm.comment} onChange={e => setCreateForm({ ...createForm, comment: e.target.value })} placeholder="Infirmière, PSC1 valide..." />
+          </Field>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
+            <button onClick={() => setShowCreate(false)} style={{ ...btnPrimary, background: '#fff', color: '#374151', border: '1.5px solid #e5e7eb' }}>Annuler</button>
+            <button onClick={handleCreate} disabled={creating} style={{ ...btnPrimary, opacity: creating ? 0.6 : 1 }}>
+              {creating ? 'Création...' : 'Créer le compte'}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* MODAL EDITION */}
       {editUser && (
         <Modal title="Modifier le compte" onClose={() => setEditUser(null)}>
-          <Field label="Prénom">
-            <input style={inputStyle} value={editForm.first_name} onChange={e => setEditForm({ ...editForm, first_name: e.target.value })} />
-          </Field>
-          <Field label="Nom">
-            <input style={inputStyle} value={editForm.last_name} onChange={e => setEditForm({ ...editForm, last_name: e.target.value })} />
-          </Field>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <Field label="Prénom">
+              <input style={inputStyle} value={editForm.first_name} onChange={e => setEditForm({ ...editForm, first_name: e.target.value })} />
+            </Field>
+            <Field label="Nom">
+              <input style={inputStyle} value={editForm.last_name} onChange={e => setEditForm({ ...editForm, last_name: e.target.value })} />
+            </Field>
+          </div>
           <Field label="Téléphone">
             <input style={inputStyle} value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} />
           </Field>
           <Field label="Club">
             <input style={inputStyle} value={editForm.club} onChange={e => setEditForm({ ...editForm, club: e.target.value })} />
           </Field>
+          <Field label="Commentaire">
+            <input style={inputStyle} value={editForm.comment} onChange={e => setEditForm({ ...editForm, comment: e.target.value })} placeholder="Notes sur ce bénévole..." />
+          </Field>
           {isAdmin && (
-            <Field label="Role">
-              <select style={inputStyle} value={editForm.role} onChange={e => setEditForm({ ...editForm, role: e.target.value })}>
-                <option value="volunteer">Bénévole</option>
-                <option value="organizer">Organisateur</option>
-                <option value="admin">Admin</option>
-              </select>
+            <Field label="Rôle">
+              <div style={{ display: 'flex', gap: 8 }}>
+                {[{ value: 'volunteer', label: 'Bénévole' }, { value: 'organizer', label: 'Organisateur' }, { value: 'admin', label: 'Admin' }].map(r => (
+                  <button key={r.value} type="button" onClick={() => setEditForm({ ...editForm, role: r.value })}
+                    style={{ flex: 1, padding: '8px 4px', border: '2px solid', borderRadius: 8, cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 600, background: editForm.role === r.value ? '#1C3829' : '#fff', color: editForm.role === r.value ? '#fff' : '#374151', borderColor: editForm.role === r.value ? '#1C3829' : '#e5e7eb' }}>
+                    {r.label}
+                  </button>
+                ))}
+              </div>
             </Field>
           )}
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
-            <button onClick={() => setEditUser(null)} style={btnSecondary}>Annuler</button>
+            <button onClick={() => setEditUser(null)} style={{ ...btnPrimary, background: '#fff', color: '#374151', border: '1.5px solid #e5e7eb' }}>Annuler</button>
             <button onClick={handleSaveEdit} disabled={saving} style={{ ...btnPrimary, opacity: saving ? 0.6 : 1 }}>
               {saving ? 'Enregistrement...' : 'Enregistrer'}
             </button>
@@ -331,65 +453,34 @@ export default function PageUsers({ profile: currentProfile }) {
         </Modal>
       )}
 
-      {resetUser && (
-        <Modal title="Réinitialiser le mot de passe" onClose={() => setResetUser(null)}>
-          <p style={{ fontSize: 14, color: '#374151', marginBottom: 20 }}>
-            Un email de réinitialisation sera envoyé a <strong>{resetUser.email}</strong>.
-          </p>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-            <button onClick={() => setResetUser(null)} style={btnSecondary}>Annuler</button>
-            <button onClick={() => handleResetPassword(resetUser.email)} style={btnOrange}>Envoyer</button>
-          </div>
-        </Modal>
-      )}
-
+      {/* MODAL ASSIGNATION */}
       {assignUser && (
-        <Modal title="Assigner a un événement" onClose={() => setAssignUser(null)}>
-          <p style={{ fontSize: 14, color: '#374151', marginBottom: 16 }}>
-            Assigner <strong>{assignUser.first_name} {assignUser.last_name}</strong> a :
-          </p>
+        <Modal title={`Assigner ${assignUser.first_name} à un événement`} onClose={() => setAssignUser(null)}>
+          <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 16 }}>Choisissez l'événement sur lequel inscrire ce bénévole.</p>
           {myEvents.length === 0 ? (
-            <p style={{ fontSize: 13, color: '#9ca3af' }}>Aucun événement disponible.</p>
+            <p style={{ fontSize: 13, color: '#9ca3af', fontStyle: 'italic' }}>Aucun événement disponible.</p>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {myEvents.map(ev => (
                 <button key={ev.id} onClick={() => handleAssign(assignUser.id, ev.id)}
-                  style={{ ...btnPrimary, textAlign: 'left', padding: '10px 12px' }}>
-                  {ev.name}
+                  style={{ padding: '12px 16px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 500, color: '#111', textAlign: 'left' }}>
+                  📅 {ev.name}
                 </button>
               ))}
             </div>
           )}
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button onClick={() => setAssignUser(null)} style={btnSecondary}>Fermer</button>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+            <button onClick={() => setAssignUser(null)} style={{ ...btnPrimary, background: '#fff', color: '#374151', border: '1.5px solid #e5e7eb' }}>Fermer</button>
           </div>
         </Modal>
       )}
 
-      {showInvite && (
-        <Modal title="Inviter un bénévole" onClose={() => setShowInvite(false)}>
-          <p style={{ fontSize: 14, color: '#374151', marginBottom: 16 }}>
-            Un email sera envoyé avec un lien pour créer son mot de passe.
-          </p>
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.4px' }}>Email</label>
-            <input style={inputStyle} type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="bénévole@email.com" />
-          </div>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-            <button onClick={() => setShowInvite(false)} style={btnSecondary}>Annuler</button>
-            <button onClick={handleInvite} disabled={inviting || !inviteEmail}
-              style={{ background: '#F97316', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 18px', fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'Inter, sans-serif', opacity: inviting || !inviteEmail ? 0.6 : 1 }}>
-              {inviting ? 'Envoi...' : "Envoyer l'invitation"}
-            </button>
-          </div>
-        </Modal>
-      )}
-
+      {/* MODAL SUPPRESSION */}
       {deleteId && (
-        <Modal title="Supprimer l'utilisateur" onClose={() => setDeleteId(null)}>
-          <p style={{ fontSize: 14, color: '#374151', marginBottom: 24 }}>Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action est irréversible.</p>
+        <Modal title="Supprimer le compte" onClose={() => setDeleteId(null)}>
+          <p style={{ fontSize: 14, color: '#374151', marginBottom: 24 }}>Êtes-vous sûr ? Cette action est irréversible.</p>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-            <button onClick={() => setDeleteId(null)} style={btnSecondary}>Annuler</button>
+            <button onClick={() => setDeleteId(null)} style={{ ...btnPrimary, background: '#fff', color: '#374151', border: '1.5px solid #e5e7eb' }}>Annuler</button>
             <button onClick={() => handleDelete(deleteId)} style={{ ...btnPrimary, background: '#dc2626' }}>Supprimer</button>
           </div>
         </Modal>

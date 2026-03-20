@@ -444,7 +444,7 @@ export default function AppLayout({ session, onLogout }) {
       return <DashboardVolunteer profile={profile} stats={stats} activeEventName={activeEventName} setPage={handleSetPage} />
     }
     if (page === 'admin') return <PageAdmin setPage={handleSetPage} />
-    if (page === 'events' && selectedEventId) return <PageEventDetail eventId={selectedEventId} profile={profile} onBack={() => setSelectedEventId(null)} onSetActiveEvent={(id, name) => { setActiveEvent(id, name); setSelectedEventId(null) }} />
+    if (page === 'events' && selectedEventId) return <PageEventDetail eventId={selectedEventId} profile={profile} activeEventId={activeEventId} onBack={() => setSelectedEventId(null)} onSetActiveEvent={(id, name) => { setActiveEvent(id, name); setSelectedEventId(null) }} />
     if (page === 'events') return <PageEvents profile={profile} onSetActiveEvent={(id, name) => setActiveEvent(id, name)} onViewDetail={(id) => setSelectedEventId(id)} activeEventId={activeEventId} />
     if (page === 'users') return <PageUsers profile={profile} activeEventId={activeEventId} />
     if (page === 'benevoles') return <PageBenevoles profile={profile} activeEventId={activeEventId} activeEventName={activeEventName} />

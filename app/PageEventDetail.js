@@ -56,7 +56,7 @@ function Section({ title, count, children }) {
   )
 }
 
-export default function PageEventDetail({ eventId, onBack, onSetActiveEvent, profile }) {
+export default function PageEventDetail({ eventId, onBack, onSetActiveEvent, profile, activeEventId }) {
   const [event, setEvent] = useState(null)
   const [organizers, setOrganizers] = useState([])
   const [volunteers, setVolunteers] = useState([])
@@ -150,10 +150,16 @@ export default function PageEventDetail({ eventId, onBack, onSetActiveEvent, pro
                 <StatusBadge status={event.status} />
                 {event.sport && <SportBadge sport={event.sport} />}
               </div>
-              <button onClick={() => onSetActiveEvent(event.id, event.name)}
-                style={{ background: '#1C3829', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 16px', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'Inter, sans-serif', flexShrink: 0, marginLeft: 12 }}>
-                ✓ Définir comme actif
-              </button>
+              {event.id === activeEventId ? (
+                <span style={{ background: '#f0fdf4', color: '#1C3829', border: '1px solid #bbf7d0', borderRadius: 8, padding: '9px 16px', fontWeight: 600, fontSize: 13, fontFamily: 'Inter, sans-serif', flexShrink: 0, marginLeft: 12 }}>
+                  ✓ Événement actif
+                </span>
+              ) : (
+                <button onClick={() => onSetActiveEvent(event.id, event.name)}
+                  style={{ background: '#1C3829', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 16px', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'Inter, sans-serif', flexShrink: 0, marginLeft: 12 }}>
+                  Travailler sur cet événement
+                </button>
+              )}
             </div>
 
             <div style={{ fontSize: 14, color: '#6b7280', display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
